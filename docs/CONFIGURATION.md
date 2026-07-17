@@ -140,12 +140,15 @@ Inspect effective config:
 curl -s http://127.0.0.1:4173/api/config | jq
 ```
 
-Apply provisional overrides (lost on daemon restart unless written to disk separately):
+Apply provisional overrides (lost on daemon restart unless written to disk separately).
+
+Session may set `ui.*` and `updates.channel` / `updates.checkOnStartup` only.  
+`updates.source`, `warp.*`, `server.*`, and `webui.*` are **not** session-overridable (edit config file or env instead).
 
 ```bash
 curl -s -X POST http://127.0.0.1:4173/api/config/session \
   -H 'content-type: application/json' \
-  -d '{"config":{"webui":{"enabled":true}}}'
+  -d '{"config":{"updates":{"channel":"beta"}}}'
 ```
 
 Clear session overrides:

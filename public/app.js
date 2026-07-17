@@ -35,6 +35,7 @@ const state = {
     forks: [],
     sourceDraft: "",
     selectedTag: "",
+    confirmToken: null,
     showForks: false,
     showReleases: false
   },
@@ -450,24 +451,8 @@ function updatesPanel() {
   const sourceRow = el("label", "input-row");
   sourceRow.innerHTML = `
     <span class="tip" data-tip="${escapeHtml(tip("source"))}" tabindex="0">${t("app.source")}</span>
-    <input data-source value="${escapeHtml(draft)}" />
-    <button class="secondary" data-save-source>${t("common.save")}</button>
+    <input data-source value="${escapeHtml(`${source.owner}/${source.repo}`)}" readonly />
   `;
-  sourceRow.querySelector("[data-source]").oninput = (event) => {
-    state.update.sourceDraft = event.target.value;
-  };
-  sourceRow.querySelector("[data-save-source]").onclick = async () => {
-    const [owner, repo] = String(state.update.sourceDraft || draft).split("/", 2);
-    if (!owner || !repo) {
-      state.error = "Source must be owner/repo";
-      render();
-      return;
-    }
-    await saveUpdatePrefs({ source: { owner, repo } });
-    state.update.showForks = false;
-    await runUpdateCheck();
-    await loadReleases();
-  };
 
   const actions = el("div", "button-row");
   const checkBtn = el("button", "primary tip", t("common.checkNow"));
@@ -531,12 +516,9 @@ function updatesPanel() {
     list.innerHTML = `<p class="muted">${t("app.forkHint")}</p>`;
     state.update.forks.forEach((fork) => {
       const item = el("button", "fork-item", `${fork.fullName || `${fork.owner}/${fork.repo}`}${fork.stars != null ? ` ★${fork.stars}` : ""}`);
-      item.onclick = async () => {
-        await saveUpdatePrefs({ source: { owner: fork.owner, repo: fork.repo } });
-        state.update.sourceDraft = `${fork.owner}/${fork.repo}`;
-        state.update.showForks = false;
-        await runUpdateCheck();
-        await loadReleases();
+      item.onclick = () => {
+        const href = `https://github.com/${fork.owner}/${fork.repo}/releases`;
+        window.open(href, "_blank", "noopener,noreferrer");
       };
       list.append(item);
     });
@@ -593,9 +575,6 @@ async function saveUpdatePrefs(partial) {
   });
   const body = await response.json();
   state.appConfig = body.config;
-  if (partial.source) {
-    state.update.sourceDraft = `${partial.source.owner}/${partial.source.repo}`;
-  }
 }
 
 async function loadAppPanel() {
@@ -622,6 +601,9 @@ async function runUpdateCheck() {
   try {
     const response = await fetch("/api/update/check");
     state.update.result = await response.json();
+    if (state.update.result?.applyConfirmToken) {
+      state.update.confirmToken = state.update.result.applyConfirmToken;
+    }
   } catch (error) {
     state.error = error.message;
   }
@@ -655,10 +637,32 @@ async function applySelectedUpdate() {
   state.busy = true;
   render();
   try {
+    const tag = state.update.selectedTag || undefined;
+    const prepRes = await fetch("/api/update/prepare", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ tag })
+    });
+    const prep = await prepRes.json();
+    if (prep.ok === false) {
+      state.error = prep.error || "Prepare failed";
+      state.busy = false;
+      render();
+      return;
+    }
+    if (prep.mode === "guided") {
+      state.toast = (prep.commands || []).join("\n");
+      state.busy = false;
+      render();
+      return;
+    }
     const response = await fetch("/api/update/apply", {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ tag: state.update.selectedTag || undefined })
+      body: JSON.stringify({
+        tag,
+        confirmToken: prep.applyConfirmToken || state.update.confirmToken
+      })
     });
     const body = await response.json();
     if (body.mode === "guided") {

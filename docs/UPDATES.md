@@ -65,21 +65,24 @@ node scripts/generate-update-manifest.mjs --version 1.3.0-beta.1 --prerelease --
 Config keys (see [CONFIGURATION.md](CONFIGURATION.md)):
 
 - `updates.channel` — `stable` | `beta`
-- `updates.source` — `{ owner, repo }` (default upstream; change to use a fork)
+- `updates.source` — `{ owner, repo }` (default upstream; change via config file/env to use a fork — **not** session-overridable)
 - `updates.checkOnStartup` — non-blocking toast when Web UI is open
 
 APIs:
 
 - `GET /api/version`
-- `GET /api/update/check`
+- `GET /api/update/check` — includes one-time `applyConfirmToken` for AppImage applies
 - `GET /api/update/releases?owner=&repo=`
 - `GET /api/update/forks`
-- `POST /api/update/apply` — AppImage only
+- `POST /api/update/prepare` — resolve tag + issue apply token
+- `POST /api/update/apply` — AppImage only; requires `confirmToken`; refused when bind is non-loopback unless `THIRDFLARE_ALLOW_REMOTE_APPLY=1`
 
 Optional auth for higher GitHub rate limits: `THIRDFLARE_GITHUB_TOKEN` or `GITHUB_TOKEN`.
 
 Override install detection: `THIRDFLARE_INSTALL_FORMAT=appimage|deb|rpm|…`  
 AppImage path override: `THIRDFLARE_APPIMAGE_PATH=/path/to/ThirdFlare-One.AppImage`
+
+AppImage downloads re-validate redirect hosts and verify against release `SHA256SUMS` when that asset is published.
 
 ## Asset naming contract
 

@@ -62,7 +62,7 @@
     "stable": "Stable",
     "beta": "Beta",
     "noReleases": "No releases found for this repository.",
-    "forkHint": "Choose the upstream repo or a fork that publishes compatible release assets."
+    "forkHint": "Forks are listed for discovery. Open a fork on GitHub to inspect releases. To install from a fork, set updates.source in your config file (not session) and restart."
   },
   "tips": {
     "mode": "WARP operating mode (warp, DoH, DoT, proxy, tunnel-only).",
@@ -73,7 +73,7 @@
     "connect": "Connect the CloudflareWARP tunnel.",
     "disconnect": "Disconnect the CloudflareWARP tunnel.",
     "channel": "Stable uses the latest non-prerelease; beta prefers prereleases.",
-    "source": "GitHub owner/repo used for update checks and release assets.",
+    "source": "Pinned GitHub owner/repo from config/env (not changeable in-session). Edit ~/.config/thirdflare/config.json to use a fork.",
     "checkUpdates": "Compare the installed version to the selected channel or release."
   }
 }

@@ -216,6 +216,108 @@ test("applyUpdate rejects client-supplied assetUrl", async () => {
   assert.match(result.error, /not allowed/i);
 });
 
+test("applyUpdate requires confirmation token for AppImage", async () => {
+  clearGithubCache();
+  const originalFetch = globalThis.fetch;
+  const assetUrl = "https://github.com/oldrepublicwizard/cloudflare-one-gui-linux/releases/download/v9.9.9/thirdflare-9.9.9-x86_64.AppImage";
+  globalThis.fetch = async (url) => {
+    const href = String(url);
+    if (href.includes("update-manifest.json")) {
+      return { ok: true, status: 200, json: async () => ({ schema: 1, stable: { version: "9.9.9", tag: "v9.9.9" }, beta: null }) };
+    }
+    if (href.includes("/releases")) {
+      return {
+        ok: true,
+        status: 200,
+        headers: { get: () => null },
+        json: async () => ([{
+          id: 1,
+          tag_name: "v9.9.9",
+          name: "9.9.9",
+          prerelease: false,
+          draft: false,
+          published_at: "2026-01-01T00:00:00Z",
+          body: "",
+          html_url: "https://github.com/example/releases/tag/v9.9.9",
+          assets: [{
+            name: "thirdflare-9.9.9-x86_64.AppImage",
+            browser_download_url: assetUrl,
+            size: 10,
+            content_type: "application/octet-stream"
+          }]
+        }])
+      };
+    }
+    return { ok: false, status: 404, json: async () => ({}) };
+  };
+  try {
+    const { applyUpdate, prepareApply, clearApplyConfirmTokens } = await import("../lib/update/index.mjs");
+    clearApplyConfirmTokens();
+    const denied = await applyUpdate(
+      { updates: { channel: "stable", source: { owner: "oldrepublicwizard", repo: "cloudflare-one-gui-linux" } } },
+      {},
+      { env: { THIRDFLARE_INSTALL_FORMAT: "appimage" }, bindHost: "127.0.0.1" }
+    );
+    assert.equal(denied.ok, false);
+    assert.match(denied.error, /confirmation token/i);
+
+    const prep = await prepareApply(
+      { updates: { channel: "stable", source: { owner: "oldrepublicwizard", repo: "cloudflare-one-gui-linux" } } },
+      {},
+      { env: { THIRDFLARE_INSTALL_FORMAT: "appimage" } }
+    );
+    assert.ok(prep.applyConfirmToken);
+
+    const remoteDenied = await applyUpdate(
+      { updates: { channel: "stable", source: { owner: "oldrepublicwizard", repo: "cloudflare-one-gui-linux" } } },
+      { confirmToken: prep.applyConfirmToken },
+      { env: { THIRDFLARE_INSTALL_FORMAT: "appimage" }, bindHost: "0.0.0.0" }
+    );
+    assert.equal(remoteDenied.ok, false);
+    assert.match(remoteDenied.error, /loopback/i);
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+test("session overrides reject updates.source", async () => {
+  const { setSessionOverrides, clearSessionOverrides, getConfig, reloadConfig } = await import("../lib/config.mjs");
+  clearSessionOverrides();
+  reloadConfig();
+  const before = getConfig().updates?.source;
+  setSessionOverrides({
+    updates: {
+      source: { owner: "attacker", repo: "evil" },
+      channel: "beta"
+    }
+  });
+  const after = getConfig();
+  assert.equal(after.updates.channel, "beta");
+  assert.deepEqual(after.updates.source, before);
+  clearSessionOverrides();
+});
+
+test("parseSha256Sums and untrusted redirect hop", async () => {
+  const { parseSha256Sums, fetchTrustedAsset } = await import("../lib/update/apply-appimage.mjs");
+  const sums = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa  thirdflare-1.0.0-x86_64.AppImage\n";
+  assert.equal(parseSha256Sums(sums, "thirdflare-1.0.0-x86_64.AppImage"), "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa");
+
+  let hops = 0;
+  const fetchImpl = async () => {
+    hops += 1;
+    return {
+      status: 302,
+      ok: false,
+      headers: { get: () => "https://evil.example/payload" }
+    };
+  };
+  await assert.rejects(
+    () => fetchTrustedAsset("https://github.com/o/r/releases/download/v1/x.AppImage", { fetchImpl }),
+    /Untrusted/
+  );
+  assert.equal(hops, 1);
+});
+
 test("applyUpdate returns guided mode for deb installs", async () => {
   clearGithubCache();
   const originalFetch = globalThis.fetch;

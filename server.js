@@ -14,7 +14,7 @@ import {
   setSessionOverrides
 } from "./lib/config.mjs";
 import { getVersion, getVersionInfo } from "./lib/version.mjs";
-import { applyUpdate, checkForUpdate } from "./lib/update/index.mjs";
+import { applyUpdate, checkForUpdate, prepareApply } from "./lib/update/index.mjs";
 import { listForks, listReleases } from "./lib/update/github.mjs";
 import { detectInstallFormat } from "./lib/update/detect-format.mjs";
 import { isSafeGithubRef } from "./lib/update/detect-format.mjs";
@@ -393,9 +393,16 @@ async function handleApi(req, res, url) {
       return;
     }
 
+    if (req.method === "POST" && url.pathname === "/api/update/prepare") {
+      const body = await readJson(req);
+      const result = await prepareApply(getConfig(), body, { bindHost: listenHost });
+      json(res, result.ok === false ? 400 : 200, result);
+      return;
+    }
+
     if (req.method === "POST" && url.pathname === "/api/update/apply") {
       const body = await readJson(req);
-      const result = await applyUpdate(getConfig(), body);
+      const result = await applyUpdate(getConfig(), body, { bindHost: listenHost });
       json(res, result.ok === false ? 400 : 200, result);
       return;
     }

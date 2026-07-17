@@ -11,7 +11,7 @@
   "scripts": {
     "dev": "THIRDFLARE_WEBUI=1 node server.js",
     "start": "node server.js",
-    "check": "node --check server.js && node --check lib/config.mjs && node --check lib/version.mjs && node --check lib/update/semver.mjs && node --check lib/update/github.mjs && node --check lib/update/manifest.mjs && node --check lib/update/detect-format.mjs && node --check lib/update/apply-appimage.mjs && node --check lib/update/index.mjs && node --check public/app.js && node --check public/i18n.js && node --check public/service-worker.js && node --check scripts/health-check.mjs && node --check scripts/port-open.mjs && node --check scripts/ci-warp-integration.test.mjs && node --check scripts/ci-update.test.mjs && node --check scripts/generate-update-manifest.mjs",
+    "check": "node --check server.js && node --check lib/config.mjs && node --check lib/version.mjs && node --check lib/update/semver.mjs && node --check lib/update/github.mjs && node --check lib/update/manifest.mjs && node --check lib/update/detect-format.mjs && node --check lib/update/confirm.mjs && node --check lib/update/apply-appimage.mjs && node --check lib/update/index.mjs && node --check public/app.js && node --check public/i18n.js && node --check public/service-worker.js && node --check scripts/health-check.mjs && node --check scripts/port-open.mjs && node --check scripts/ci-warp-integration.test.mjs && node --check scripts/ci-update.test.mjs && node --check scripts/generate-update-manifest.mjs",
     "test:integration": "node --test scripts/ci-warp-integration.test.mjs",
     "test:update": "node --test scripts/ci-update.test.mjs",
     "test:all": "npm run test:integration && npm run test:update",
