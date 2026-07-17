@@ -25,7 +25,7 @@ flatpak install -y --user flathub org.freedesktop.Platform//24.08 org.freedeskto
 sed -i "s/version=\"[0-9.][0-9.]*\"/version=\"${VERSION}\"/" "$METAINFO"
 
 flatpak-builder --force-clean --user --build-only "$BUILD_DIR" "$MANIFEST"
-flatpak build-export --no-appstream "$REPO_DIR" "$BUILD_DIR"
+flatpak build-export "$REPO_DIR" "$BUILD_DIR"
 flatpak build-bundle "$REPO_DIR" \
   "${OUT}/cloudflare-one-gui-${VERSION}-x86_64.flatpak" \
   "$APP_ID"

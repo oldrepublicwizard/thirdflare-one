@@ -33,6 +33,5 @@
     <content_attribute id="social-audio">none</content_attribute>
     <content_attribute id="social-chat">none</content_attribute>
     <content_attribute id="social-contacts">none</content_attribute>
-    <content_attribute id="social-intended">everyone</content_attribute>
   </content_rating>
 </component>
