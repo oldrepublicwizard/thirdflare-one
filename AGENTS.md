@@ -2,7 +2,7 @@
 
 ## Project
 
-**ThirdFlare One** — unofficial third-party Cloudflare One client (`thirdflare` npm package). Wraps host `warp-cli` through a Node daemon and optional Web UI. Repository folder name may still read `cloudflare-one-gui-linux` on GitHub until renamed.
+**ThirdFlare One** — unofficial third-party Cloudflare One client (`thirdflare` npm package). Wraps host `warp-cli` through a Node daemon and optional Web UI. GitHub repository: `oldrepublicwizard/thirdflare-one`.
 
 ## Project Structure
 
