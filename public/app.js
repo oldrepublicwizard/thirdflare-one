@@ -30,13 +30,16 @@ const state = {
   appConfig: null,
   update: {
     checking: false,
+    loadingCatalog: false,
+    loadingReleases: false,
     result: null,
     releases: [],
     forks: [],
-    sourceDraft: "",
+    upstream: null,
+    selectedOwner: "",
+    selectedRepo: "",
     selectedTag: "",
     confirmToken: null,
-    showForks: false,
     showReleases: false
   },
   live: {
@@ -429,11 +432,28 @@ function appView() {
 function updatesPanel() {
   const panel = el("section", "panel updates-panel");
   const channel = state.appConfig?.updates?.channel || "stable";
-  const source = state.appConfig?.updates?.source || { owner: "oldrepublicwizard", repo: "cloudflare-one-gui-linux" };
-  const draft = state.update.sourceDraft || `${source.owner}/${source.repo}`;
+  const source = state.appConfig?.updates?.source || { owner: "oldrepublicwizard", repo: "thirdflare-one" };
+  const owner = state.update.selectedOwner || source.owner;
+  const repo = state.update.selectedRepo || source.repo;
   const result = state.update.result;
+  const catalog = state.update.forks.length
+    ? state.update.forks
+    : [{ owner: source.owner, repo: source.repo, fullName: `${source.owner}/${source.repo}`, upstream: true, stars: null }];
 
-  panel.innerHTML = `<div class="panel-heading"><h3>${t("app.updates")}</h3><span>${escapeHtml(draft)}</span></div>`;
+  const owners = [...new Set(catalog.map((entry) => entry.owner).filter(Boolean))].sort((a, b) => {
+    if (a === (state.update.upstream?.owner || source.owner)) return -1;
+    if (b === (state.update.upstream?.owner || source.owner)) return 1;
+    return a.localeCompare(b);
+  });
+  const reposForOwner = catalog
+    .filter((entry) => entry.owner === owner)
+    .sort((a, b) => {
+      if (a.upstream) return -1;
+      if (b.upstream) return 1;
+      return (b.stars || 0) - (a.stars || 0) || a.repo.localeCompare(b.repo);
+    });
+
+  panel.innerHTML = `<div class="panel-heading"><h3>${t("app.updates")}</h3><span>${escapeHtml(`${owner}/${repo}`)}</span></div>`;
 
   const channelRow = el("div", "field-group");
   channelRow.innerHTML = `<label class="tip" data-tip="${escapeHtml(tip("channel"))}" tabindex="0">${t("app.channel")}</label>`;
@@ -448,34 +468,114 @@ function updatesPanel() {
   });
   channelRow.append(channelSeg);
 
-  const sourceRow = el("label", "input-row");
-  sourceRow.innerHTML = `
-    <span class="tip" data-tip="${escapeHtml(tip("source"))}" tabindex="0">${t("app.source")}</span>
-    <input data-source value="${escapeHtml(`${source.owner}/${source.repo}`)}" readonly />
-  `;
+  const sourceGrid = el("div", "combo-grid");
+
+  const ownerField = el("label", "combo-field");
+  ownerField.innerHTML = `<span class="tip" data-tip="${escapeHtml(tip("sourceOwner"))}" tabindex="0">${t("app.sourceOwner")}</span>`;
+  const ownerSelect = document.createElement("select");
+  ownerSelect.className = "combo";
+  ownerSelect.setAttribute("aria-label", t("app.sourceOwner"));
+  owners.forEach((name) => {
+    const option = document.createElement("option");
+    option.value = name;
+    option.textContent = name;
+    if (name === owner) option.selected = true;
+    ownerSelect.append(option);
+  });
+  ownerSelect.onchange = async () => {
+    state.update.selectedOwner = ownerSelect.value;
+    const nextRepos = catalog.filter((entry) => entry.owner === ownerSelect.value);
+    const preferred = nextRepos.find((entry) => entry.upstream) || nextRepos[0];
+    state.update.selectedRepo = preferred?.repo || "";
+    state.update.selectedTag = "";
+    await applySelectedSource();
+  };
+  ownerField.append(ownerSelect);
+
+  const repoField = el("label", "combo-field");
+  repoField.innerHTML = `<span class="tip" data-tip="${escapeHtml(tip("sourceRepo"))}" tabindex="0">${t("app.sourceRepo")}</span>`;
+  const repoSelect = document.createElement("select");
+  repoSelect.className = "combo";
+  repoSelect.setAttribute("aria-label", t("app.sourceRepo"));
+  if (!reposForOwner.length) {
+    const option = document.createElement("option");
+    option.value = repo;
+    option.textContent = repo;
+    option.selected = true;
+    repoSelect.append(option);
+  } else {
+    reposForOwner.forEach((entry) => {
+      const option = document.createElement("option");
+      option.value = entry.repo;
+      const star = entry.stars != null ? ` · ★${entry.stars}` : "";
+      const mark = entry.upstream ? ` (${t("app.upstream")})` : "";
+      option.textContent = `${entry.repo}${mark}${star}`;
+      if (entry.repo === repo) option.selected = true;
+      repoSelect.append(option);
+    });
+  }
+  repoSelect.onchange = async () => {
+    state.update.selectedRepo = repoSelect.value;
+    state.update.selectedTag = "";
+    await applySelectedSource();
+  };
+  repoField.append(repoSelect);
+
+  const releaseField = el("label", "combo-field combo-field-wide");
+  releaseField.innerHTML = `<span class="tip" data-tip="${escapeHtml(tip("release"))}" tabindex="0">${t("app.release")}</span>`;
+  const releaseSelect = document.createElement("select");
+  releaseSelect.className = "combo";
+  releaseSelect.setAttribute("aria-label", t("app.release"));
+  const channelDefault = document.createElement("option");
+  channelDefault.value = "";
+  channelDefault.textContent = t("app.channelDefault");
+  if (!state.update.selectedTag) channelDefault.selected = true;
+  releaseSelect.append(channelDefault);
+  state.update.releases.forEach((release) => {
+    const option = document.createElement("option");
+    option.value = release.tag;
+    const pre = release.prerelease ? ` · ${t("app.prerelease")}` : "";
+    option.textContent = `${release.tag}${pre}`;
+    if (release.tag === state.update.selectedTag) option.selected = true;
+    releaseSelect.append(option);
+  });
+  releaseSelect.onchange = () => {
+    state.update.selectedTag = releaseSelect.value;
+    if (state.update.result && releaseSelect.value) {
+      const release = state.update.releases.find((item) => item.tag === releaseSelect.value);
+      if (release) {
+        const latest = release.tag.replace(/^v/i, "");
+        const current = state.update.result.current || "";
+        const delta = compareLooseSemver(latest, current);
+        state.update.result = {
+          ...state.update.result,
+          latest,
+          release,
+          downgrade: delta < 0,
+          updateAvailable: delta > 0
+        };
+      }
+    }
+    render();
+  };
+  releaseField.append(releaseSelect);
+
+  sourceGrid.append(ownerField, repoField, releaseField);
 
   const actions = el("div", "button-row");
+  const refreshBtn = el("button", "secondary tip", t("common.refreshSources"));
+  refreshBtn.setAttribute("data-tip", tip("refreshSources"));
+  refreshBtn.tabIndex = 0;
+  refreshBtn.onclick = () => loadUpdateCatalog({ force: true });
   const checkBtn = el("button", "primary tip", t("common.checkNow"));
   checkBtn.setAttribute("data-tip", tip("checkUpdates"));
   checkBtn.tabIndex = 0;
   checkBtn.onclick = () => runUpdateCheck();
-  const forksBtn = el("button", "secondary", t("common.browseForks"));
-  forksBtn.onclick = async () => {
-    state.update.showForks = !state.update.showForks;
-    if (state.update.showForks) await loadForks();
-    else render();
-  };
-  const releasesBtn = el("button", "secondary", t("common.pickRelease"));
-  releasesBtn.onclick = async () => {
-    state.update.showReleases = !state.update.showReleases;
-    if (state.update.showReleases) await loadReleases();
-    else render();
-  };
-  actions.append(checkBtn, forksBtn, releasesBtn);
+  actions.append(refreshBtn, checkBtn);
 
-  panel.append(channelRow, sourceRow, actions);
+  panel.append(channelRow, sourceGrid, actions);
 
-  if (state.update.checking) {
+  if (state.update.loadingCatalog || state.update.loadingReleases || state.update.checking) {
     panel.append(el("p", "muted", t("common.loading")));
   }
 
@@ -486,6 +586,7 @@ function updatesPanel() {
     if (result.downgrade) statusText = t("app.downgradeWarn");
     card.innerHTML = `
       <strong>${escapeHtml(statusText)}</strong>
+      <p class="update-source-line">${escapeHtml(`${result.source?.owner || owner}/${result.source?.repo || repo}`)}</p>
       <p>${escapeHtml(result.release?.name || result.latest || "")}</p>
       <pre class="release-notes">${escapeHtml((result.release?.body || "").slice(0, 1200) || t("app.releaseNotes"))}</pre>
     `;
@@ -511,60 +612,47 @@ function updatesPanel() {
     panel.append(card);
   }
 
-  if (state.update.showForks && state.update.forks.length) {
-    const list = el("div", "fork-list");
-    list.innerHTML = `<p class="muted">${t("app.forkHint")}</p>`;
-    state.update.forks.forEach((fork) => {
-      const item = el("button", "fork-item", `${fork.fullName || `${fork.owner}/${fork.repo}`}${fork.stars != null ? ` ★${fork.stars}` : ""}`);
-      item.onclick = () => {
-        const href = `https://github.com/${fork.owner}/${fork.repo}/releases`;
-        window.open(href, "_blank", "noopener,noreferrer");
-      };
-      list.append(item);
-    });
-    panel.append(list);
-  }
-
-  if (state.update.showReleases) {
-    const list = el("div", "release-list");
-    if (!state.update.releases.length) {
-      list.append(el("p", "muted", t("app.noReleases")));
-    } else {
-      state.update.releases.forEach((release) => {
-        const selected = state.update.selectedTag === release.tag ? " selected" : "";
-        const item = el("button", `release-item${selected}`, `${release.tag}${release.prerelease ? " (pre)" : ""}`);
-        item.onclick = () => {
-          state.update.selectedTag = release.tag;
-          if (state.update.result) {
-            const latest = release.tag.replace(/^v/i, "");
-            const current = state.update.result.current || "";
-            const cmp = (a, b) => {
-              const pa = String(a).split(/[.+-]/).map((n) => Number(n) || 0);
-              const pb = String(b).split(/[.+-]/).map((n) => Number(n) || 0);
-              for (let i = 0; i < 3; i += 1) {
-                const d = (pa[i] || 0) - (pb[i] || 0);
-                if (d) return d;
-              }
-              return 0;
-            };
-            const delta = cmp(latest, current);
-            state.update.result = {
-              ...state.update.result,
-              latest,
-              release,
-              downgrade: delta < 0,
-              updateAvailable: delta > 0
-            };
-          }
-          render();
-        };
-        list.append(item);
-      });
-    }
-    panel.append(list);
-  }
-
   return panel;
+}
+
+function compareLooseSemver(a, b) {
+  const pa = String(a).split(/[.+-]/).map((n) => Number(n) || 0);
+  const pb = String(b).split(/[.+-]/).map((n) => Number(n) || 0);
+  for (let i = 0; i < 3; i += 1) {
+    const d = (pa[i] || 0) - (pb[i] || 0);
+    if (d) return d;
+  }
+  return 0;
+}
+
+async function applySelectedSource() {
+  const owner = state.update.selectedOwner;
+  const repo = state.update.selectedRepo;
+  if (!owner || !repo) return;
+  state.update.loadingReleases = true;
+  state.error = null;
+  render();
+  try {
+    const response = await fetch("/api/update/source", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ owner, repo })
+    });
+    const body = await response.json();
+    if (!response.ok || body.ok === false) {
+      state.error = body.error || "Unable to set update source";
+      state.update.loadingReleases = false;
+      render();
+      return;
+    }
+    state.appConfig = body.config;
+    await loadReleases();
+    await runUpdateCheck();
+  } catch (error) {
+    state.error = error.message;
+    state.update.loadingReleases = false;
+    render();
+  }
 }
 
 async function saveUpdatePrefs(partial) {
@@ -577,6 +665,25 @@ async function saveUpdatePrefs(partial) {
   state.appConfig = body.config;
 }
 
+async function loadUpdateCatalog({ force = false } = {}) {
+  if (state.update.forks.length && !force) return;
+  state.update.loadingCatalog = true;
+  render();
+  try {
+    const response = await fetch("/api/update/forks");
+    const body = await response.json();
+    state.update.upstream = body.upstream || null;
+    state.update.forks = body.forks || [];
+    const source = state.appConfig?.updates?.source || body.upstream;
+    state.update.selectedOwner = source?.owner || body.upstream?.owner || "";
+    state.update.selectedRepo = source?.repo || body.upstream?.repo || "";
+  } catch (error) {
+    state.error = error.message;
+  }
+  state.update.loadingCatalog = false;
+  render();
+}
+
 async function loadAppPanel() {
   try {
     const [versionRes, configRes] = await Promise.all([
@@ -587,11 +694,16 @@ async function loadAppPanel() {
     const configBody = await configRes.json();
     state.appConfig = configBody.config;
     const source = state.appConfig?.updates?.source;
-    if (source) state.update.sourceDraft = `${source.owner}/${source.repo}`;
+    if (source) {
+      state.update.selectedOwner = source.owner;
+      state.update.selectedRepo = source.repo;
+    }
   } catch (error) {
     state.error = error.message;
   }
   render();
+  await loadUpdateCatalog();
+  await loadReleases();
 }
 
 async function runUpdateCheck() {
@@ -604,6 +716,10 @@ async function runUpdateCheck() {
     if (state.update.result?.applyConfirmToken) {
       state.update.confirmToken = state.update.result.applyConfirmToken;
     }
+    if (state.update.result?.source) {
+      state.update.selectedOwner = state.update.result.source.owner;
+      state.update.selectedRepo = state.update.result.source.repo;
+    }
   } catch (error) {
     state.error = error.message;
   }
@@ -612,24 +728,22 @@ async function runUpdateCheck() {
 }
 
 async function loadForks() {
-  try {
-    const response = await fetch("/api/update/forks");
-    const body = await response.json();
-    state.update.forks = body.forks || [];
-  } catch (error) {
-    state.error = error.message;
-  }
-  render();
+  await loadUpdateCatalog({ force: true });
 }
 
 async function loadReleases() {
+  state.update.loadingReleases = true;
   try {
-    const response = await fetch("/api/update/releases");
+    const owner = state.update.selectedOwner;
+    const repo = state.update.selectedRepo;
+    const query = owner && repo ? `?owner=${encodeURIComponent(owner)}&repo=${encodeURIComponent(repo)}` : "";
+    const response = await fetch(`/api/update/releases${query}`);
     const body = await response.json();
     state.update.releases = body.releases || [];
   } catch (error) {
     state.error = error.message;
   }
+  state.update.loadingReleases = false;
   render();
 }
 

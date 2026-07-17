@@ -145,10 +145,9 @@ curl -s http://127.0.0.1:4173/api/config | jq
 
 Apply provisional overrides (lost on daemon restart unless written to disk separately).
 
-Session may set `ui.locale` / `ui.theme` / `ui.openBrowser` / `ui.notifications` and `updates.channel` / `updates.checkOnStartup` only.  
-`updates.source`, `warp.*`, `server.*`, and `webui.*` are **not** session-overridable (edit config file or env instead).
-
-Note: changing `ui.notifications` in-session does not restart the status watcher until the daemon restarts.
+Session may set `ui.locale` / `ui.theme` / `ui.openBrowser` / `ui.notifications` and `updates.channel` / `updates.checkOnStartup` only via `/api/config/session`.  
+`updates.source` may only change through `POST /api/update/source`, which accepts the pinned upstream or one of its GitHub forks.  
+`warp.*`, `server.*`, and `webui.*` are **not** session-overridable.
 
 ```bash
 curl -s -X POST http://127.0.0.1:4173/api/config/session \

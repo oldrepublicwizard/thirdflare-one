@@ -280,7 +280,7 @@ test("applyUpdate requires confirmation token for AppImage", async () => {
   }
 });
 
-test("session overrides reject updates.source", async () => {
+test("session overrides reject raw updates.source via /session path", async () => {
   const { setSessionOverrides, clearSessionOverrides, getConfig, reloadConfig } = await import("../lib/config.mjs");
   clearSessionOverrides();
   reloadConfig();
@@ -294,6 +294,15 @@ test("session overrides reject updates.source", async () => {
   const after = getConfig();
   assert.equal(after.updates.channel, "beta");
   assert.deepEqual(after.updates.source, before);
+  clearSessionOverrides();
+});
+
+test("setSessionUpdateSource accepts explicit owner/repo", async () => {
+  const { setSessionUpdateSource, clearSessionOverrides, getConfig, reloadConfig } = await import("../lib/config.mjs");
+  clearSessionOverrides();
+  reloadConfig();
+  setSessionUpdateSource({ owner: "oldrepublicwizard", repo: "thirdflare-one" });
+  assert.equal(getConfig().updates.source.repo, "thirdflare-one");
   clearSessionOverrides();
 });
 

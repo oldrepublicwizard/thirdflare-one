@@ -10,8 +10,10 @@ import {
   describeConfigSources,
   effectiveBind,
   getConfig,
+  getPinnedUpdateSource,
   reloadConfig,
-  setSessionOverrides
+  setSessionOverrides,
+  setSessionUpdateSource
 } from "./lib/config.mjs";
 import { getVersion, getVersionInfo } from "./lib/version.mjs";
 import { applyUpdate, checkForUpdate, prepareApply } from "./lib/update/index.mjs";
@@ -356,9 +358,9 @@ async function handleApi(req, res, url) {
     }
 
     if (req.method === "GET" && url.pathname === "/api/update/forks") {
-      const active = getConfig();
-      const owner = url.searchParams.get("owner") || active.updates?.source?.owner || "oldrepublicwizard";
-      const repo = url.searchParams.get("repo") || active.updates?.source?.repo || "cloudflare-one-gui-linux";
+      const pinned = getPinnedUpdateSource();
+      const owner = pinned.owner;
+      const repo = pinned.repo;
       if (!isSafeGithubRef(owner) || !isSafeGithubRef(repo)) {
         json(res, 400, { ok: false, error: "Invalid owner/repo." });
         return;
@@ -371,6 +373,38 @@ async function handleApi(req, res, url) {
           { owner, repo, fullName: `${owner}/${repo}`, stars: null, upstream: true },
           ...forks
         ]
+      });
+      return;
+    }
+
+    if (req.method === "POST" && url.pathname === "/api/update/source") {
+      const body = await readJson(req);
+      const owner = String(body?.owner || "").trim();
+      const repo = String(body?.repo || "").trim();
+      if (!isSafeGithubRef(owner) || !isSafeGithubRef(repo)) {
+        json(res, 400, { ok: false, error: "Invalid owner/repo." });
+        return;
+      }
+      const pinned = getPinnedUpdateSource();
+      const forks = await listForks(pinned);
+      const allowed = [
+        { owner: pinned.owner, repo: pinned.repo },
+        ...forks.map((f) => ({ owner: f.owner, repo: f.repo }))
+      ];
+      const ok = allowed.some((entry) => entry.owner === owner && entry.repo === repo);
+      if (!ok) {
+        json(res, 403, {
+          ok: false,
+          error: "Source must be the pinned upstream or one of its GitHub forks."
+        });
+        return;
+      }
+      setSessionUpdateSource({ owner, repo });
+      json(res, 200, {
+        ok: true,
+        config: getConfig(),
+        source: { owner, repo },
+        sources: describeConfigSources()
       });
       return;
     }

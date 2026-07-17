@@ -26,8 +26,7 @@
     "checkNow": "Check now",
     "apply": "Download & restart",
     "showCommands": "Show install commands",
-    "browseForks": "Browse forks",
-    "pickRelease": "Pick release",
+    "refreshSources": "Refresh sources",
     "unknown": "Unknown",
     "loading": "Loading…"
   },
@@ -50,7 +49,12 @@
     "updates": "Updates",
     "about": "About",
     "channel": "Release channel",
-    "source": "Update source (owner/repo)",
+    "sourceOwner": "Owner",
+    "sourceRepo": "Repository",
+    "release": "Release",
+    "channelDefault": "Channel default (stable/beta pointer)",
+    "upstream": "upstream",
+    "prerelease": "pre",
     "checkOnStartup": "Check for updates on startup",
     "currentVersion": "Current version",
     "installFormat": "Install format",
@@ -61,8 +65,7 @@
     "releaseNotes": "Release notes",
     "stable": "Stable",
     "beta": "Beta",
-    "noReleases": "No releases found for this repository.",
-    "forkHint": "Forks are listed for discovery. Open a fork on GitHub to inspect releases. To install from a fork, set updates.source in your config file (not session) and restart."
+    "noReleases": "No releases found for this repository."
   },
   "tips": {
     "mode": "WARP operating mode (warp, DoH, DoT, proxy, tunnel-only).",
@@ -73,7 +76,10 @@
     "connect": "Connect the CloudflareWARP tunnel.",
     "disconnect": "Disconnect the CloudflareWARP tunnel.",
     "channel": "Stable uses the latest non-prerelease; beta prefers prereleases.",
-    "source": "Pinned GitHub owner/repo from config/env (not changeable in-session). Edit ~/.config/thirdflare/config.json to use a fork.",
+    "sourceOwner": "GitHub owner for the pinned upstream or one of its forks.",
+    "sourceRepo": "Repository under the selected owner. Only upstream and its forks are listed.",
+    "release": "Optional specific release tag. Leave on channel default to follow stable/beta.",
+    "refreshSources": "Reload upstream and fork list from GitHub.",
     "checkUpdates": "Compare the installed version to the selected channel or release."
   }
 }

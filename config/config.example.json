@@ -20,7 +20,7 @@
     "channel": "stable",
     "source": {
       "owner": "oldrepublicwizard",
-      "repo": "cloudflare-one-gui-linux"
+      "repo": "thirdflare-one"
     },
     "checkOnStartup": true
   }
