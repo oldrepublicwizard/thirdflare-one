@@ -19,8 +19,10 @@ cp -a "${ROOT}/dist/payload/usr" "${APPDIR}/usr"
 # Bundle official Node.js binary distribution.
 node_tarball="node-v${NODE_VERSION}-linux-x64.tar.xz"
 node_url="https://nodejs.org/dist/v${NODE_VERSION}/${node_tarball}"
+node_sha256="c6fa75c841cbffac851678a472f2a5bd612fff8308ef39236190e1f8dbb0e567"
 tmpdir="$(mktemp -d)"
-curl -fsSL "$node_url" -o "${tmpdir}/${node_tarball}"
+curl --connect-timeout 30 --max-time 600 -fsSL "$node_url" -o "${tmpdir}/${node_tarball}"
+echo "${node_sha256}  ${node_tarball}" | (cd "$tmpdir" && sha256sum -c -)
 tar -xJf "${tmpdir}/${node_tarball}" -C "$tmpdir"
 mkdir -p "${APPDIR}/usr/lib/cloudflare-one-gui/runtime"
 mv "${tmpdir}/node-v${NODE_VERSION}-linux-x64" "${APPDIR}/usr/lib/cloudflare-one-gui/runtime/node"
@@ -34,7 +36,7 @@ install -m 0644 "${ROOT}/assets/cloudflare-one-gui.svg" "${APPDIR}/cloudflare-on
 ln -sf cloudflare-one-gui.svg "${APPDIR}/.DirIcon"
 
 tool_dir="$(mktemp -d)"
-curl -fsSL -o "${tool_dir}/appimagetool" \
+  curl --connect-timeout 30 --max-time 300 -fsSL -o "${tool_dir}/appimagetool" \
   "https://github.com/AppImage/appimagetool/releases/download/continuous/appimagetool-${ARCH}.AppImage"
 chmod +x "${tool_dir}/appimagetool"
 

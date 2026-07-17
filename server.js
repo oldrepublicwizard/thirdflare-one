@@ -77,11 +77,16 @@ const PROTOCOLS = new Set(["MASQUE", "WireGuard"]);
 const FAMILIES = new Set(["full", "malware", "off"]);
 const MASQUE_OPTIONS = new Set(["h3-only", "h2-only", "h3-with-h2-fallback"]);
 
+function warpCliCommand() {
+  return process.env.WARP_CLI || "warp-cli";
+}
+
 function spawnWarpCli(warpArgs, options = {}) {
-  if (process.env.FLATPAK_ID) {
+  const cmd = warpCliCommand();
+  if (process.env.FLATPAK_ID && cmd === "warp-cli") {
     return spawn("flatpak-spawn", ["--host", "--", "warp-cli", ...warpArgs], options);
   }
-  return spawn("warp-cli", warpArgs, options);
+  return spawn(cmd, warpArgs, options);
 }
 
 function runWarp(args, options = {}) {

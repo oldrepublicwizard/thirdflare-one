@@ -1,0 +1,26 @@
+FROM node:20-bookworm
+
+LABEL org.opencontainers.image.source="https://github.com/oldrepublicwizard/cloudflare-one-gui-linux"
+LABEL org.opencontainers.image.description="CI builder image for Cloudflare One GUI packaging"
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+  bash \
+  ca-certificates \
+  curl \
+  file \
+  flatpak \
+  flatpak-builder \
+  libfuse2 \
+  rpm \
+  shellcheck \
+  snapcraft \
+  sudo \
+  && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /workspace
+
+COPY package.json ./
+COPY scripts/mock-warp-cli.sh ./scripts/mock-warp-cli.sh
+RUN chmod +x ./scripts/mock-warp-cli.sh
+
+CMD ["bash"]

@@ -14,20 +14,73 @@ https://developers.cloudflare.com/warp-client/get-started/linux/
 | `.snap` (classic) | Host `warp-cli` | Classic confinement required |
 | `*-src.tar.gz` + `PKGBUILD` | — | For AUR / manual builds |
 | `SHA256SUMS` | — | Always published with releases |
+| **Docker (ghcr.io)** | Host `warp-cli` when running container | API server image + CI builder image |
+| **Homebrew (macOS)** | `node@20`, host `warp-cli` | Tap branch `homebrew-tap` |
 
-Store publishing (Flathub, Snap Store, AUR) is **manual** — CI only attaches artifacts to GitHub Releases.
+## CI / manual runs
+
+```bash
+# PR CI: syntax, mock warp-cli integration, deb/rpm smoke
+gh workflow run ci.yml --ref feat/ci-cd-packaging
+
+# Optional real WARP attempt on Ubuntu runner (soft-fail if daemon unavailable)
+gh workflow run ci.yml --ref feat/ci-cd-packaging -f real_warp=true
+
+# Full packaging matrix + ghcr.io images + workflow artifacts
+gh workflow run package.yml --ref feat/ci-cd-packaging
+
+# Publish to an existing GitHub Release tag
+gh workflow run package.yml --ref main -f tag=v0.1.0 -f publish_release=true -f update_homebrew_tap=true
+```
+
+### WARP testing in CI
+
+- **Default:** `scripts/mock-warp-cli.sh` via `WARP_CLI` exercises `/api/health`, `/api/snapshot` (network/DNS debug), and `/api/action`.
+- **Optional:** `scripts/ci-real-warp-smoke.sh` installs Cloudflare's `cloudflare-warp` package and re-runs integration tests against real `warp-cli` when the daemon responds.
+
+## Container images (GHCR)
+
+After `package.yml` runs with `publish_ghcr` enabled:
+
+```bash
+docker pull ghcr.io/oldrepublicwizard/cloudflare-one-gui-linux:latest
+docker run --rm -p 4173:4173 -e WARP_CLI=/path/to/warp-cli ghcr.io/oldrepublicwizard/cloudflare-one-gui-linux:latest
+```
+
+CI builder image:
+
+```bash
+docker pull ghcr.io/oldrepublicwizard/cloudflare-one-gui-linux-ci:latest
+```
+
+## Homebrew (macOS)
+
+After a release with `update_homebrew_tap=true`:
+
+```bash
+brew tap oldrepublicwizard/cloudflare-one-gui-linux homebrew-tap
+brew install cloudflare-one-gui
+cloudflare-one-gui --no-open
+```
+
+Requires [Cloudflare WARP for macOS](https://developers.cloudflare.com/warp-client/get-started/macos/) so `warp-cli` is available.
 
 ## Local commands
 
 ```bash
-npm run package:stage      # FHS tree under dist/payload
+npm run check
+npm run test:integration          # mock warp-cli HTTP integration
+npm run test:warp:real            # optional real warp-cli smoke (Linux)
+npm run package:stage
 npm run package:deb
 npm run package:rpm
 npm run package:arch
 npm run package:appimage
-npm run package:flatpak    # needs flatpak-builder + Freedesktop 24.08
-npm run package:snap       # needs snapcraft
+npm run package:flatpak
+npm run package:snap
 npm run package:source
+npm run package:verify            # verify all built artifacts
+npm run package:homebrew
 npm run package:checksums
 ```
 

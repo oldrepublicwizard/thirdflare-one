@@ -24,10 +24,11 @@ else
 fi
 
 run_warp_cli() {
-  if [[ -n "${FLATPAK_ID:-}" ]] && command -v flatpak-spawn >/dev/null 2>&1; then
+  local bin="${WARP_CLI:-warp-cli}"
+  if [[ -n "${FLATPAK_ID:-}" && "$bin" == "warp-cli" ]] && command -v flatpak-spawn >/dev/null 2>&1; then
     flatpak-spawn --host -- warp-cli "$@"
   else
-    warp-cli "$@"
+    "$bin" "$@"
   fi
 }
 

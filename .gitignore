@@ -10,6 +10,8 @@ packaging/flatpak/.flatpak-builder/
 packaging/flatpak/repo/
 packaging/flatpak/build/
 snap/snapcraft.yaml
+homebrew-tap/
+squashfs-root/
 *.AppImage
 *.deb
 *.rpm

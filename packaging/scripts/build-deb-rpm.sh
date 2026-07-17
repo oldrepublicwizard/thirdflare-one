@@ -19,7 +19,7 @@ bash "${ROOT}/packaging/scripts/stage-payload.sh"
 if ! command -v nfpm >/dev/null 2>&1; then
   echo "Installing nfpm ${NFPM_VERSION}..."
   tmp="$(mktemp -d)"
-  curl -fsSL "https://github.com/goreleaser/nfpm/releases/download/v${NFPM_VERSION}/nfpm_${NFPM_VERSION}_Linux_x86_64.tar.gz" \
+  curl --connect-timeout 30 --max-time 300 -fsSL "https://github.com/goreleaser/nfpm/releases/download/v${NFPM_VERSION}/nfpm_${NFPM_VERSION}_Linux_x86_64.tar.gz" \
     | tar -xz -C "$tmp" nfpm
   install -m 0755 "${tmp}/nfpm" /usr/local/bin/nfpm 2>/dev/null \
     || install -m 0755 "${tmp}/nfpm" "${HOME}/.local/bin/nfpm"

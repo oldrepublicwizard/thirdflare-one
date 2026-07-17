@@ -18,7 +18,7 @@ fi
 
 # Ensure runtime/sdk are present (best-effort on CI).
 flatpak remote-add --if-not-exists --user flathub https://dl.flathub.org/repo/flathub.flatpakrepo || true
-flatpak install -y --user flathub org.freedesktop.Platform//24.08 org.freedesktop.Sdk//24.08 || true
+flatpak install -y --user flathub org.freedesktop.Platform//24.08 org.freedesktop.Sdk//24.08
 
 # Patch metainfo release version for this build.
 sed -i "s/version=\"[0-9.][0-9.]*\"/version=\"${VERSION}\"/" \

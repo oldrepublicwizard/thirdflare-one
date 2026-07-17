@@ -86,6 +86,43 @@ Prebuilt packages (`.deb`, `.rpm`, AppImage, Flatpak, Snap, source tarball) are 
 
 Releases are driven by [release-please](https://github.com/googleapis/release-please) from [Conventional Commits](https://www.conventionalcommits.org/) on `main` (`feat:`, `fix:`, `feat!:` / `BREAKING CHANGE:`). Merging the Release PR tags the version and triggers the packaging workflow.
 
+### CI testing (WARP connectivity)
+
+Every PR runs mock `warp-cli` integration tests (`npm run test:integration`) that exercise DNS resolution, `/api/health`, `/api/snapshot` (network/DNS debug), and guarded `/api/action` calls. Optionally trigger real WARP smoke on Ubuntu:
+
+```bash
+gh workflow run ci.yml -f real_warp=true
+```
+
+### Manual packaging run
+
+Build all formats, push GHCR images, and upload workflow artifacts:
+
+```bash
+gh workflow run package.yml --ref main
+gh workflow run package.yml --ref main -f publish_ghcr=true
+```
+
+### Container images (GHCR)
+
+```bash
+docker pull ghcr.io/oldrepublicwizard/cloudflare-one-gui-linux:latest
+docker run --rm -p 4173:4173 ghcr.io/oldrepublicwizard/cloudflare-one-gui-linux:latest
+```
+
+Mount or install host `warp-cli` when running the container — the image ships the API server only.
+
+### Homebrew (macOS)
+
+After a release with the Homebrew tap updated:
+
+```bash
+brew tap oldrepublicwizard/cloudflare-one-gui-linux https://github.com/oldrepublicwizard/cloudflare-one-gui-linux.git homebrew-tap
+brew install cloudflare-one-gui
+```
+
+Requires [Cloudflare WARP for macOS](https://developers.cloudflare.com/warp-client/get-started/macos/) so `warp-cli` is available.
+
 ## Current Scope
 
 This is a functional local GUI layer, not a packaged native Electron/Tauri/WebKit application yet. Distro packages ship the Node server plus browser launcher. The Parity page tracks implemented Windows-like surfaces and remaining native gaps; the desktop entry provides quick actions and an optional `yad` tray while bundled AppIndicator/Electron/Tauri packaging remains future native work.

@@ -11,7 +11,9 @@
   "scripts": {
     "dev": "node server.js",
     "start": "node server.js",
-    "check": "node --check server.js && node --check public/app.js && node --check public/service-worker.js && node --check scripts/health-check.mjs && node --check scripts/port-open.mjs",
+    "check": "node --check server.js && node --check public/app.js && node --check public/service-worker.js && node --check scripts/health-check.mjs && node --check scripts/port-open.mjs && node --check scripts/ci-warp-integration.test.mjs",
+    "test:integration": "node --test scripts/ci-warp-integration.test.mjs",
+    "test:warp:real": "bash scripts/ci-real-warp-smoke.sh",
     "install:desktop": "bash scripts/install-desktop-entry.sh",
     "uninstall:desktop": "bash scripts/uninstall-desktop-entry.sh",
     "install:user-service": "bash scripts/install-user-service.sh",
@@ -24,6 +26,8 @@
     "package:flatpak": "bash packaging/scripts/build-flatpak.sh",
     "package:snap": "bash packaging/scripts/build-snap.sh",
     "package:source": "bash packaging/scripts/build-source.sh",
-    "package:checksums": "bash packaging/scripts/checksums.sh"
+    "package:checksums": "bash packaging/scripts/checksums.sh",
+    "package:verify": "bash packaging/scripts/verify-packages.sh all",
+    "package:homebrew": "bash packaging/scripts/generate-homebrew-formula.sh"
   }
 }
