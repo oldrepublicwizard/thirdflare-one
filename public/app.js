@@ -507,7 +507,12 @@ function updatesPanel() {
     const cta = el("div", "button-row");
     if (result.installFormat === "appimage" && (result.updateAvailable || state.update.selectedTag)) {
       const applyBtn = el("button", "primary", t("common.apply"));
-      applyBtn.onclick = () => applySelectedUpdate();
+      applyBtn.onclick = () => {
+        if (result.downgrade && !window.confirm("Selected release is older than the installed version. Continue?")) {
+          return;
+        }
+        applySelectedUpdate();
+      };
       cta.append(applyBtn);
     } else if (result.guidedCommands?.length) {
       const showBtn = el("button", "secondary", t("common.showCommands"));
@@ -549,12 +554,24 @@ function updatesPanel() {
         item.onclick = () => {
           state.update.selectedTag = release.tag;
           if (state.update.result) {
+            const latest = release.tag.replace(/^v/i, "");
+            const current = state.update.result.current || "";
+            const cmp = (a, b) => {
+              const pa = String(a).split(/[.+-]/).map((n) => Number(n) || 0);
+              const pb = String(b).split(/[.+-]/).map((n) => Number(n) || 0);
+              for (let i = 0; i < 3; i += 1) {
+                const d = (pa[i] || 0) - (pb[i] || 0);
+                if (d) return d;
+              }
+              return 0;
+            };
+            const delta = cmp(latest, current);
             state.update.result = {
               ...state.update.result,
-              latest: release.tag.replace(/^v/i, ""),
+              latest,
               release,
-              downgrade: false,
-              updateAvailable: true
+              downgrade: delta < 0,
+              updateAvailable: delta > 0
             };
           }
           render();

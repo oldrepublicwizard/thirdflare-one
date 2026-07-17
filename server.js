@@ -17,6 +17,7 @@ import { getVersion, getVersionInfo } from "./lib/version.mjs";
 import { applyUpdate, checkForUpdate } from "./lib/update/index.mjs";
 import { listForks, listReleases } from "./lib/update/github.mjs";
 import { detectInstallFormat } from "./lib/update/detect-format.mjs";
+import { isSafeGithubRef } from "./lib/update/detect-format.mjs";
 
 const root = fileURLToPath(new URL(".", import.meta.url));
 const publicRoot = join(root, "public");
@@ -363,6 +364,10 @@ async function handleApi(req, res, url) {
       const active = getConfig();
       const owner = url.searchParams.get("owner") || active.updates?.source?.owner;
       const repo = url.searchParams.get("repo") || active.updates?.source?.repo;
+      if (!isSafeGithubRef(owner) || !isSafeGithubRef(repo)) {
+        json(res, 400, { ok: false, error: "Invalid owner/repo." });
+        return;
+      }
       const releases = await listReleases({ owner, repo });
       json(res, 200, { ok: true, source: { owner, repo }, releases });
       return;
@@ -372,6 +377,10 @@ async function handleApi(req, res, url) {
       const active = getConfig();
       const owner = url.searchParams.get("owner") || active.updates?.source?.owner || "oldrepublicwizard";
       const repo = url.searchParams.get("repo") || active.updates?.source?.repo || "cloudflare-one-gui-linux";
+      if (!isSafeGithubRef(owner) || !isSafeGithubRef(repo)) {
+        json(res, 400, { ok: false, error: "Invalid owner/repo." });
+        return;
+      }
       const forks = await listForks({ owner, repo });
       json(res, 200, {
         ok: true,

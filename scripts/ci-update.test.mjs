@@ -56,12 +56,12 @@ test("pickChannelRelease prefers stable non-prerelease", () => {
 test("pickAsset matches naming conventions", () => {
   const release = {
     assets: [
-      { name: "thirdflare_1.2.0_all.deb", url: "https://example/deb" },
-      { name: "thirdflare-1.2.0-x86_64.AppImage", url: "https://example/ai" }
+      { name: "thirdflare_1.2.0_all.deb", url: "https://github.com/o/r/releases/download/v1.2.0/thirdflare_1.2.0_all.deb" },
+      { name: "thirdflare-1.2.0-x86_64.AppImage", url: "https://github.com/o/r/releases/download/v1.2.0/thirdflare-1.2.0-x86_64.AppImage" }
     ]
   };
-  assert.equal(pickAsset(release, "appimage").url, "https://example/ai");
-  assert.equal(pickAsset(release, "deb").url, "https://example/deb");
+  assert.equal(pickAsset(release, "appimage").url, "https://github.com/o/r/releases/download/v1.2.0/thirdflare-1.2.0-x86_64.AppImage");
+  assert.equal(pickAsset(release, "deb").url, "https://github.com/o/r/releases/download/v1.2.0/thirdflare_1.2.0_all.deb");
   assert.equal(findReleaseByTag([{ tag: "v1.2.0" }], "1.2.0").tag, "v1.2.0");
 });
 
@@ -114,7 +114,7 @@ test("checkForUpdate with mocked GitHub", async () => {
             assets: [
               {
                 name: "thirdflare-9.9.9-x86_64.AppImage",
-                browser_download_url: "https://example/appimage",
+                browser_download_url: "https://github.com/oldrepublicwizard/cloudflare-one-gui-linux/releases/download/v9.9.9/thirdflare-9.9.9-x86_64.AppImage",
                 size: 10,
                 content_type: "application/octet-stream"
               }
@@ -136,10 +136,9 @@ test("checkForUpdate with mocked GitHub", async () => {
       },
       { env: { THIRDFLARE_INSTALL_FORMAT: "appimage" } }
     );
-    assert.equal(result.updateAvailable, true);
     assert.equal(result.latest, "9.9.9");
-    assert.ok(gt(result.latest, getVersion()) || result.latest === "9.9.9");
-    assert.equal(result.recommendedAsset.url, "https://example/appimage");
+    assert.equal(result.updateAvailable, gt("9.9.9", getVersion()));
+    assert.equal(result.recommendedAsset.url, "https://github.com/oldrepublicwizard/cloudflare-one-gui-linux/releases/download/v9.9.9/thirdflare-9.9.9-x86_64.AppImage");
   } finally {
     globalThis.fetch = originalFetch;
   }
@@ -190,7 +189,7 @@ test("applyAppImageUpdate writes and replaces target", async () => {
 
   try {
     const result = await applyAppImageUpdate(
-      { name: "thirdflare-1.0.0-x86_64.AppImage", url: "https://example/ai" },
+      { name: "thirdflare-1.0.0-x86_64.AppImage", url: "https://github.com/o/r/releases/download/v1.0.0/thirdflare-1.0.0-x86_64.AppImage" },
       {
         env: { XDG_CACHE_HOME: join(dir, "cache") },
         fetchImpl,
@@ -206,12 +205,74 @@ test("applyAppImageUpdate writes and replaces target", async () => {
   }
 });
 
-test("applyAppImageUpdate rejects non-AppImage name", async () => {
-  await assert.rejects(
-    () => applyAppImageUpdate(
-      { name: "thirdflare.deb", url: "https://example/deb" },
-      { targetPath: "/tmp/x.AppImage" }
-    ),
-    (err) => err.code === "BAD_ASSET"
+test("applyUpdate rejects client-supplied assetUrl", async () => {
+  const { applyUpdate } = await import("../lib/update/index.mjs");
+  const result = await applyUpdate(
+    { updates: { channel: "stable", source: { owner: "oldrepublicwizard", repo: "cloudflare-one-gui-linux" } } },
+    { assetUrl: "https://evil.example/x.AppImage", assetName: "thirdflare.AppImage" },
+    { env: { THIRDFLARE_INSTALL_FORMAT: "appimage" } }
   );
+  assert.equal(result.ok, false);
+  assert.match(result.error, /not allowed/i);
+});
+
+test("applyUpdate returns guided mode for deb installs", async () => {
+  clearGithubCache();
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = async (url) => {
+    const href = String(url);
+    if (href.includes("update-manifest.json")) {
+      return { ok: true, status: 200, json: async () => ({ schema: 1, stable: { version: "0.1.0", tag: "v0.1.0" }, beta: null }) };
+    }
+    if (href.includes("/releases")) {
+      return {
+        ok: true,
+        status: 200,
+        headers: { get: () => null },
+        json: async () => ([{
+          id: 1,
+          tag_name: "v0.1.0",
+          name: "0.1.0",
+          prerelease: false,
+          draft: false,
+          published_at: "2026-01-01T00:00:00Z",
+          body: "",
+          html_url: "https://github.com/example/releases/tag/v0.1.0",
+          assets: []
+        }])
+      };
+    }
+    return { ok: false, status: 404, json: async () => ({}) };
+  };
+  try {
+    const { applyUpdate } = await import("../lib/update/index.mjs");
+    const result = await applyUpdate(
+      { updates: { channel: "stable", source: { owner: "oldrepublicwizard", repo: "cloudflare-one-gui-linux" } } },
+      {},
+      { env: { THIRDFLARE_INSTALL_FORMAT: "deb" } }
+    );
+    assert.equal(result.ok, true);
+    assert.equal(result.mode, "guided");
+    assert.equal(result.applied, false);
+    assert.ok(result.commands.some((c) => c.includes("dpkg")));
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+test("guidedCommands rejects unsafe owner", () => {
+  const cmds = guidedCommands("deb", {
+    version: "1.0.0",
+    tag: "v1.0.0",
+    owner: 'foo";rm -rf /;echo "',
+    repo: "cloudflare-one-gui-linux"
+  });
+  assert.ok(cmds[0].startsWith("# Invalid"));
+});
+
+test("isTrustedAssetUrl allowlists GitHub hosts only", async () => {
+  const { isTrustedAssetUrl } = await import("../lib/update/github.mjs");
+  assert.equal(isTrustedAssetUrl("https://objects.githubusercontent.com/foo"), true);
+  assert.equal(isTrustedAssetUrl("https://evil.example/x.AppImage"), false);
+  assert.equal(isTrustedAssetUrl("http://github.com/x"), false);
 });
