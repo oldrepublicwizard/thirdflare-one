@@ -29,6 +29,7 @@ import {
   parseRegistrationOrganization,
   parseRegistrationShow
 } from "./lib/warp/registration.mjs";
+import { applyKillSwitch, probeKillSwitchActive } from "./lib/killswitch/index.mjs";
 import { startStatusWatcher } from "./lib/notify/status-watcher.mjs";
 
 const root = fileURLToPath(new URL(".", import.meta.url));
@@ -213,12 +214,15 @@ function parseDnsStats(text) {
 }
 
 function redactWarpOutput(text) {
-  return text
+  if (text == null) return text;
+  return String(text)
     .replace(/(^|\n)(ID:\s+).+/gi, "$1$2[redacted]")
     .replace(/(Device ID:\s+).+/gi, "$1[redacted]")
     .replace(/(Public key:\s+).+/gi, "$1[redacted]")
     .replace(/(License:\s+).+/gi, "$1[redacted]")
-    .replace(/(Account ID:\s+).+/gi, "$1[redacted]");
+    .replace(/(Account ID:\s+).+/gi, "$1[redacted]")
+    // JSON from warp-cli --json (registration show/devices/organization)
+    .replace(/("(?:id|device_id|public_key|license|account_id)"\s*:\s*)"(?:\\.|[^"\\])*"/gi, '$1"[redacted]"');
 }
 
 function redactCommand(result) {
@@ -609,6 +613,54 @@ async function handleApi(req, res, url) {
       return;
     }
 
+    if (req.method === "GET" && url.pathname === "/api/killswitch") {
+      const desired = Boolean(getConfig().warp?.killSwitch);
+      const allowLan = Boolean(getConfig().warp?.killSwitchAllowLan);
+      const probe = await probeKillSwitchActive();
+      json(res, 200, {
+        ok: true,
+        desired,
+        allowLan,
+        active: probe.active,
+        detail: probe.detail,
+        interface: "CloudflareWARP",
+        note: "Native nftables kill switch — blocks outbound traffic except loopback, the WARP tunnel, and Cloudflare bootstrap IPs."
+      });
+      return;
+    }
+
+    if (req.method === "POST" && url.pathname === "/api/killswitch") {
+      const body = await readJson(req);
+      if (typeof body?.enabled !== "boolean") {
+        json(res, 400, { ok: false, error: "Body must include boolean enabled." });
+        return;
+      }
+      const allowLan = typeof body.allowLan === "boolean"
+        ? body.allowLan
+        : Boolean(getConfig().warp?.killSwitchAllowLan);
+      setSessionOverrides({
+        warp: {
+          killSwitch: body.enabled,
+          killSwitchAllowLan: allowLan
+        }
+      });
+      const result = await applyKillSwitch({
+        enabled: body.enabled,
+        allowLan
+      });
+      json(res, result.ok ? 200 : 502, {
+        ok: result.ok,
+        desired: body.enabled,
+        allowLan,
+        active: result.enabled,
+        detail: result.detail,
+        method: result.method,
+        guidedCommands: result.guidedCommands,
+        script: result.script
+      });
+      return;
+    }
+
     if (req.method === "GET" && url.pathname === "/api/account") {
       json(res, 200, await accountDetails());
       return;
@@ -681,6 +733,21 @@ createServer(async (req, res) => {
   });
   if (notifyWatcher.started) {
     console.log("Desktop notifications enabled (ui.notifications).");
+  }
+
+  if (getConfig().warp?.killSwitch) {
+    applyKillSwitch({
+      enabled: true,
+      allowLan: Boolean(getConfig().warp?.killSwitchAllowLan)
+    }).then((result) => {
+      if (result.ok) {
+        console.log("WARP kill switch active (warp.killSwitch).");
+      } else {
+        console.warn(`WARP kill switch desired but not applied: ${result.detail}`);
+      }
+    }).catch((error) => {
+      console.warn(`WARP kill switch apply failed: ${error.message}`);
+    });
   }
 
   const shutdown = () => {

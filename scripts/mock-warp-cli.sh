@@ -2,26 +2,22 @@
 # CI mock for warp-cli — simulates daemon responses for integration tests.
 set -euo pipefail
 
-strip_global_flags() {
-  local args=()
-  while (($#)); do
-    case "$1" in
-      --no-ansi|--no-paginate|--accept-tos) shift ;;
-      --json) JSON=1; shift ;;
-      --listen) LISTEN=1; shift ;;
-      *) args+=("$1"); shift ;;
-    esac
-  done
-  printf '%s\n' "${args[@]:-}"
-}
-
-LISTEN=0
+# Parse global flags in this shell (not a subshell) so JSON/LISTEN stick.
+ARGS=()
 JSON=0
-mapfile -t ARGS < <(strip_global_flags "$@")
+LISTEN=0
+while (($#)); do
+  case "$1" in
+    --no-ansi|--no-paginate|--accept-tos) shift ;;
+    --json) JSON=1; shift ;;
+    --listen) LISTEN=1; shift ;;
+    *) ARGS+=("$1"); shift ;;
+  esac
+done
+
 CMD="${ARGS[0]:-status}"
 SUB="${ARGS[1]:-}"
 SUB2="${ARGS[2]:-}"
-SUB3="${ARGS[3]:-}"
 
 if [[ "$LISTEN" -eq 1 && "$CMD" == "status" ]]; then
   printf 'Status update: Connected\n'

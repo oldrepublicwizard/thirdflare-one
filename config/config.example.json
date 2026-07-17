@@ -8,7 +8,9 @@
     "allowRemote": false
   },
   "warp": {
-    "cli": "warp-cli"
+    "cli": "warp-cli",
+    "killSwitch": false,
+    "killSwitchAllowLan": false
   },
   "ui": {
     "openBrowser": true,

@@ -67,7 +67,16 @@ const state = {
   account: null,
   accountLoading: false,
   revealLicense: false,
-  accountPath: "auto"
+  accountPath: "auto",
+  killswitch: {
+    desired: false,
+    allowLan: false,
+    active: false,
+    detail: "",
+    guidedCommands: null,
+    script: null,
+    loading: false
+  }
 };
 
 const app = document.querySelector("#app");
@@ -102,11 +111,67 @@ function statusText() {
   return state.snapshot.status.label || "State unavailable";
 }
 
+/** Single Connect/Disconnect control driven by live WARP status. */
+function connectionToggle() {
+  const daemonOk = state.snapshot?.daemon?.available !== false;
+  const status = state.snapshot?.status;
+  const connected = Boolean(status?.connected);
+  const connecting = Boolean(status?.connecting);
+
+  if (!daemonOk) {
+    return {
+      action: null,
+      label: t("common.connect"),
+      tipKey: "daemon",
+      className: "primary tip connection-toggle",
+      disabled: true,
+      pressed: false
+    };
+  }
+  if (connected || connecting) {
+    return {
+      action: "disconnect",
+      label: connecting ? t("common.connecting") : t("common.disconnect"),
+      tipKey: "disconnect",
+      className: "secondary danger tip connection-toggle is-connected",
+      disabled: false,
+      pressed: true
+    };
+  }
+  return {
+    action: "connect",
+    label: t("common.connect"),
+    tipKey: "connect",
+    className: "primary tip connection-toggle",
+    disabled: false,
+    pressed: false
+  };
+}
+
+function applyConnectionToggle(button) {
+  if (!button) return;
+  const toggle = connectionToggle();
+  button.className = toggle.className;
+  button.textContent = toggle.label;
+  button.disabled = toggle.disabled || state.busy;
+  button.setAttribute("aria-pressed", toggle.pressed ? "true" : "false");
+  button.setAttribute("data-action", toggle.action || "");
+  button.setAttribute("data-tip", tip(toggle.tipKey));
+  button.tabIndex = 0;
+}
+
 function el(tag, className, html = "") {
   const node = document.createElement(tag);
   if (className) node.className = className;
   node.innerHTML = html;
   return node;
+}
+
+function hasFocusedField() {
+  const active = document.activeElement;
+  if (!active || active === document.body) return false;
+  const tag = active.tagName;
+  return tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT" || active.isContentEditable;
 }
 
 async function refresh({ silent = false } = {}) {
@@ -118,10 +183,118 @@ async function refresh({ silent = false } = {}) {
     const response = await fetch("/api/snapshot");
     state.snapshot = await response.json();
     if (state.view === "account") await loadAccount(false);
+    if (state.view === "home" || state.view === "settings") await loadKillSwitch(false);
   } catch (error) {
     state.error = error.message;
   }
+  if (silent && hasFocusedField()) {
+    patchLiveChrome();
+    return;
+  }
   render();
+}
+
+async function loadKillSwitch(showBusy = true) {
+  if (showBusy) state.killswitch.loading = true;
+  try {
+    const response = await fetch("/api/killswitch");
+    const body = await response.json();
+    state.killswitch.desired = Boolean(body.desired);
+    state.killswitch.allowLan = Boolean(body.allowLan);
+    state.killswitch.active = Boolean(body.active);
+    state.killswitch.detail = body.detail || "";
+    if (body.ok !== false) {
+      state.killswitch.guidedCommands = null;
+      state.killswitch.script = null;
+    }
+  } catch (error) {
+    state.killswitch.detail = error.message;
+  }
+  state.killswitch.loading = false;
+}
+
+async function setKillSwitch(enabled, allowLan = state.killswitch.allowLan) {
+  if (enabled && !window.confirm(t("home.killSwitchConfirm"))) return;
+  state.killswitch.loading = true;
+  state.error = null;
+  render();
+  try {
+    const response = await fetch("/api/killswitch", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ enabled, allowLan })
+    });
+    const body = await response.json();
+    state.killswitch.desired = Boolean(body.desired);
+    state.killswitch.allowLan = Boolean(body.allowLan);
+    state.killswitch.active = Boolean(body.active);
+    state.killswitch.detail = body.detail || "";
+    state.killswitch.guidedCommands = body.guidedCommands || null;
+    state.killswitch.script = body.script || null;
+    if (!response.ok) state.error = body.detail || "Kill switch apply failed.";
+    if (state.appConfig?.warp) {
+      state.appConfig.warp.killSwitch = state.killswitch.desired;
+      state.appConfig.warp.killSwitchAllowLan = state.killswitch.allowLan;
+    }
+  } catch (error) {
+    state.error = error.message;
+  }
+  state.killswitch.loading = false;
+  render();
+}
+
+function killSwitchPanel() {
+  const ks = state.killswitch;
+  const panel = el("section", "panel killswitch-panel");
+  const mismatch = ks.desired !== ks.active;
+  panel.innerHTML = `
+    <div class="panel-heading">
+      <h3${tipMarkup("killSwitch")}>${t("home.killSwitch")}</h3>
+      <span>${ks.active ? t("home.killSwitchOn") : t("home.killSwitchOff")}</span>
+    </div>
+    <p class="panel-lede tip" data-tip="${escapeHtml(tip("killSwitch"))}" tabindex="0">${t("home.killSwitchCopy")}</p>
+  `;
+
+  const main = el("div", "switch-row");
+  main.innerHTML = `
+    <div class="switch-meta">
+      <strong class="tip" data-tip="${escapeHtml(tip("killSwitch"))}" tabindex="0">${t("home.killSwitchLabel")}</strong>
+      <p>${escapeHtml(ks.detail || (mismatch ? t("home.killSwitchMismatch") : t("home.killSwitchHint")))}</p>
+    </div>
+  `;
+  const toggle = el("button", `switch ${ks.desired ? "on" : ""}`);
+  toggle.type = "button";
+  toggle.setAttribute("role", "switch");
+  toggle.setAttribute("aria-checked", ks.desired ? "true" : "false");
+  toggle.setAttribute("aria-label", t("home.killSwitchLabel"));
+  toggle.disabled = ks.loading || state.busy;
+  toggle.onclick = () => setKillSwitch(!ks.desired, ks.allowLan);
+  main.append(toggle);
+  panel.append(main);
+
+  const lan = el("div", "switch-row");
+  lan.innerHTML = `
+    <div class="switch-meta">
+      <strong class="tip" data-tip="${escapeHtml(tip("killSwitchAllowLan"))}" tabindex="0">${t("home.killSwitchAllowLan")}</strong>
+      <p>${t("home.killSwitchAllowLanHint")}</p>
+    </div>
+  `;
+  const lanToggle = el("button", `switch ${ks.allowLan ? "on" : ""}`);
+  lanToggle.type = "button";
+  lanToggle.setAttribute("role", "switch");
+  lanToggle.setAttribute("aria-checked", ks.allowLan ? "true" : "false");
+  lanToggle.setAttribute("aria-label", t("home.killSwitchAllowLan"));
+  lanToggle.disabled = ks.loading || state.busy;
+  lanToggle.onclick = () => setKillSwitch(ks.desired, !ks.allowLan);
+  lan.append(lanToggle);
+  panel.append(lan);
+
+  if (ks.guidedCommands?.length) {
+    const guide = el("div", "killswitch-guide");
+    guide.innerHTML = `<p>${t("home.killSwitchGuided")}</p><pre>${escapeHtml(ks.guidedCommands.join("\n"))}${ks.script ? `\n\n${escapeHtml(ks.script)}` : ""}</pre>`;
+    panel.append(guide);
+  }
+  return panel;
 }
 
 async function loadAccount(showBusy = true) {
@@ -294,13 +467,16 @@ function homeView() {
       <p>${state.snapshot?.daemon?.message || t("common.loading")}</p>
     </div>
     <div class="hero-actions">
-      <button class="primary tip" data-action="connect" data-tip="${escapeHtml(tip("connect"))}" tabindex="0">${t("common.connect")}</button>
-      <button class="secondary tip" data-action="disconnect" data-tip="${escapeHtml(tip("disconnect"))}" tabindex="0">${t("common.disconnect")}</button>
+      <button type="button" class="connection-toggle" data-connection-toggle tabindex="0"></button>
     </div>
   `;
-  primary.querySelector('[data-action="connect"]').onclick = () => action("connect");
-  primary.querySelector('[data-action="disconnect"]').onclick = () => action("disconnect");
-
+  const toggleBtn = primary.querySelector("[data-connection-toggle]");
+  applyConnectionToggle(toggleBtn);
+  toggleBtn.onclick = () => {
+    const next = connectionToggle();
+    if (!next.action || next.disabled) return;
+    action(next.action);
+  };
   const quick = el("section", "panel quick-panel");
   quick.innerHTML = `<div class="panel-heading"><h3${tipMarkup("mode")}>${t("home.quickSettings")}</h3><span>${t("home.quickHint")}</span></div>`;
   quick.append(segmented(t("home.mode"), quickModes, "setMode", setting("Mode"), tip("mode"), modeValueTips));
@@ -308,7 +484,7 @@ function homeView() {
   quick.append(segmented(t("home.families"), families, "setFamilies", setting("Families mode", "DNS families"), tip("families"), familiesValueTips));
 
   layout.append(primary, quick);
-  grid.append(layout, metrics(), liveStatePanel(), outputPanel("Last command", state.lastAction, "rawOutput"));
+  grid.append(layout, killSwitchPanel(), metrics(), liveStatePanel(), outputPanel("Last command", state.lastAction, "rawOutput"));
   return grid;
 }
 
@@ -749,6 +925,7 @@ function diagnosticsView() {
 function settingsView() {
   const view = el("div", "view-stack");
   view.append(pageTitle("WARP Settings", "General WARP client settings and administrative controls.", "pageSettings"));
+  view.append(killSwitchPanel());
   view.append(segmented("Compliance environment", ["Normal", "FedRAMP-High"], "setEnvironment", setting("Compliance Environment"), tip("environment")));
   view.append(formPanel("Administrative override", [
     ["Override code", "overrideCode", "Apply code", () => action("overrideCode", state.forms.overrideCode, null, true), "overrideCode"],
@@ -1240,6 +1417,7 @@ function parityView() {
   view.append(parityPanel("Implemented GUI coverage", [
     ["Current connection state", "Live status stream, connect/disconnect, daemon health, tunnel/DNS metrics."],
     ["Account and registration", "Registration show/new/delete, organization, devices, license, token, key rotation."],
+    ["Kill switch (nftables)", "ThirdFlare-managed output filter: lo + CloudflareWARP + Cloudflare bootstrap IPs; optional LAN allow. Uses nft/pkexec."],
     ["Gateway DNS", "Families mode, DNS logging, fallback domains, default fallbacks, Gateway ID override."],
     ["Tunnel controls", "Mode, tunnel protocol, MASQUE options, endpoint, proxy port, VNet, split tunnel routes."],
     ["Trusted networks", "SSID list/add/reset plus Wi-Fi and Ethernet disable toggles."],
@@ -1252,7 +1430,8 @@ function parityView() {
   view.append(parityPanel("Remaining native gaps", [
     ["First-class tray packaging", "The yad tray works when available; a bundled AppIndicator/Electron/Tauri tray still needs native packaging."],
     ["Native packaging", "Needs Electron, Tauri, WebKitGTK, or distro packages for a self-contained app."],
-    ["Privileged flows", "Endpoint and policy-changing commands may need a privilege broker/polkit flow."],
+    ["Official Always On CLI", "Linux warp-cli has no public Always On / lock switch; ThirdFlare uses nftables instead of the Windows-native toggle."],
+    ["Privileged flows", "Kill switch and some policy commands may need polkit/pkexec when the daemon is unprivileged."],
     ["Exact Windows visuals", "The shell is Windows-like, but not a pixel clone of the proprietary Windows client."]
   ], "gap"));
   return view;
@@ -1373,6 +1552,8 @@ function patchLiveChrome() {
   const statusLabel = app.querySelector(".status-label");
   if (statusLabel) statusLabel.textContent = statusText();
 
+  applyConnectionToggle(app.querySelector("[data-connection-toggle]"));
+
   const liveDatum = [...app.querySelectorAll(".state-datum")].find((node) => {
     const label = node.querySelector("span");
     return label && label.textContent === "Live event";
@@ -1434,6 +1615,8 @@ async function boot() {
     // defaults
   }
   await loadLocale(locale);
+  state.killswitch.desired = Boolean(state.appConfig?.warp?.killSwitch);
+  state.killswitch.allowLan = Boolean(state.appConfig?.warp?.killSwitchAllowLan);
   render();
   await refresh();
   connectLiveEvents();
@@ -1475,8 +1658,8 @@ function connectLiveEvents() {
     const after = statusFingerprint(state.snapshot?.status);
     const statusChanged = before !== after;
 
-    // Avoid full DOM rebuilds on every status line — those reset scroll.
-    if (statusChanged && state.view === "home") {
+    // Avoid full DOM rebuilds on every status line — those reset scroll / steal focus.
+    if (statusChanged && state.view === "home" && !hasFocusedField()) {
       render();
     } else {
       patchLiveChrome();

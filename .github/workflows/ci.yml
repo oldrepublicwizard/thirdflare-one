@@ -75,6 +75,9 @@ jobs:
       - name: Run registration parser unit tests
         run: npm run test:registration
 
+      - name: Run killswitch unit tests
+        run: npm run test:killswitch
+
   warp-real:
     name: WARP real smoke (optional)
     runs-on: ubuntu-latest
