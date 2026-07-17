@@ -19,22 +19,27 @@ https://developers.cloudflare.com/warp-client/get-started/linux/
 ## CI / manual runs
 
 ```bash
-# PR CI: syntax, mock warp-cli integration, deb/rpm smoke
-gh workflow run ci.yml --ref feat/ci-cd-packaging
+# PR CI: syntax, mock warp-cli integration, update tests, deb/rpm smoke
+gh workflow run ci.yml --ref main
 
 # Optional real WARP attempt on Ubuntu runner (soft-fail if daemon unavailable)
-gh workflow run ci.yml --ref feat/ci-cd-packaging -f real_warp=true
+gh workflow run ci.yml --ref main -f real_warp=true
 
 # Full packaging matrix + ghcr.io images + workflow artifacts
-gh workflow run package.yml --ref feat/ci-cd-packaging
+gh workflow run package.yml --ref main
 
-# Publish to an existing GitHub Release tag
+# Publish to an existing GitHub Release tag (+ sync update-manifest)
 gh workflow run package.yml --ref main -f tag=v0.1.0 -f publish_release=true -f update_homebrew_tap=true
 ```
+
+### Release Please
+
+Release Please bumps versions from Conventional Commits. Enable **Allow GitHub Actions to create and approve pull requests** under repo Settings → Actions → General, or the workflow fails. Published releases trigger `package.yml`, which uploads artifacts and updates `config/update-manifest.json` (see [UPDATES.md](UPDATES.md)).
 
 ### WARP testing in CI
 
 - **Default:** `scripts/mock-warp-cli.sh` via `WARP_CLI` exercises `/api/health`, `/api/snapshot` (network/DNS debug), and `/api/action`.
+- **Updates:** `npm run test:update` covers semver, manifest, and AppImage apply with mocked GitHub.
 - **Optional:** `scripts/ci-real-warp-smoke.sh` installs Cloudflare's `cloudflare-warp` package and re-runs integration tests against real `warp-cli` when the daemon responds.
 
 ## Container images (GHCR)
@@ -69,6 +74,7 @@ Requires [Cloudflare WARP for macOS](https://developers.cloudflare.com/warp-clie
 ```bash
 npm run check
 npm run test:integration          # mock warp-cli HTTP integration
+npm run test:update               # update engine unit tests
 npm run test:warp:real            # optional real warp-cli smoke (Linux)
 npm run package:stage
 npm run package:deb
@@ -86,17 +92,18 @@ npm run package:checksums
 ## Install layout (deb/rpm/arch)
 
 ```
-/usr/bin/cloudflare-one-gui
-/usr/lib/cloudflare-one-gui/   # server.js, public/, bin/, scripts/, assets/
-/usr/share/applications/cloudflare-one-gui.desktop
-/usr/share/icons/hicolor/scalable/apps/cloudflare-one-gui.svg
-/usr/lib/systemd/user/cloudflare-one-gui.service
+/usr/bin/thirdflare
+/usr/bin/cloudflare-one-gui   # legacy wrapper
+/usr/lib/thirdflare/          # server.js, public/, bin/, scripts/, assets/, lib/
+/usr/share/applications/thirdflare.desktop
+/usr/share/icons/hicolor/scalable/apps/thirdflare.svg
+/usr/lib/systemd/user/thirdflare.service
 ```
 
 Enable the optional user service after install:
 
 ```bash
-systemctl --user enable --now cloudflare-one-gui.service
+systemctl --user enable --now thirdflare.service
 ```
 
 ## Signing

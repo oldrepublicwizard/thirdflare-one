@@ -1,5 +1,15 @@
 name: Release Please
 
+# Creates a release PR from Conventional Commits, then tags/releases on merge.
+#
+# Required repo setting (or Release Please fails with:
+# "GitHub Actions is not permitted to create or approve pull requests"):
+#   Settings → Actions → General → Workflow permissions
+#   → Allow GitHub Actions to create and approve pull requests
+#
+# After a release is published, Package workflow builds artifacts and syncs
+# config/update-manifest.json (see docs/UPDATES.md).
+
 on:
   push:
     branches: [main]

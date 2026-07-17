@@ -1,14 +1,17 @@
+import { loadLocale, t, tip, getLocale } from "./i18n.js";
+
 const navItems = [
-  ["home", "Home", "⌂"],
-  ["account", "Account", "◎"],
-  ["gateway", "Gateway DNS", "◇"],
-  ["tunnel", "Tunnel", "↔"],
-  ["split", "Split Tunnel", "⌁"],
-  ["trusted", "Trusted Networks", "⌁"],
-  ["diagnostics", "Diagnostics", "◷"],
-  ["settings", "Settings", "⚙"],
-  ["parity", "Parity", "✓"],
-  ["advanced", "Advanced", "⌘"]
+  ["home", "nav.home", "⌂"],
+  ["account", "nav.account", "◎"],
+  ["gateway", "nav.gateway", "◇"],
+  ["tunnel", "nav.tunnel", "↔"],
+  ["split", "nav.split", "⌁"],
+  ["trusted", "nav.trusted", "⌁"],
+  ["diagnostics", "nav.diagnostics", "◷"],
+  ["settings", "nav.settings", "⚙"],
+  ["app", "nav.app", "✦"],
+  ["parity", "nav.parity", "✓"],
+  ["advanced", "nav.advanced", "⌘"]
 ];
 
 const quickModes = ["warp", "doh", "warp+doh", "dot", "warp+dot", "proxy", "tunnel_only"];
@@ -22,6 +25,19 @@ const state = {
   busy: false,
   lastAction: null,
   error: null,
+  toast: null,
+  version: null,
+  appConfig: null,
+  update: {
+    checking: false,
+    result: null,
+    releases: [],
+    forks: [],
+    sourceDraft: "",
+    selectedTag: "",
+    showForks: false,
+    showReleases: false
+  },
   live: {
     connected: false,
     label: "Live status connecting",
@@ -122,12 +138,13 @@ function shell() {
 
   const body = el("main", "app-body");
   const nav = el("nav", "sidebar");
-  navItems.forEach(([id, label, icon]) => {
+  navItems.forEach(([id, labelKey, icon]) => {
     const button = el("button", `nav-item ${state.view === id ? "active" : ""}`);
-    button.innerHTML = `<span class="nav-icon">${icon}</span><span>${label}</span>`;
+    button.innerHTML = `<span class="nav-icon">${icon}</span><span>${t(labelKey)}</span>`;
     button.onclick = () => {
       state.view = id;
       render();
+      if (id === "app") loadAppPanel();
     };
     nav.append(button);
   });
@@ -143,15 +160,15 @@ function header() {
     <div class="brand">
       <div class="brand-mark" aria-hidden="true"><span></span></div>
       <div>
-        <div class="brand-title">ThirdFlare</div>
-        <div class="brand-subtitle">Unofficial Cloudflare One · cross-platform</div>
+        <div class="brand-title">${t("brand.title")}</div>
+        <div class="brand-subtitle">${t("brand.subtitle")}</div>
       </div>
     </div>
     <div class="window-actions">
       <div class="live-pill ${state.live.connected ? "online" : "offline"}">
-        <span></span>${state.live.connected ? "Live" : "Polling"}
+        <span></span>${state.live.connected ? t("common.live") : t("common.polling")}
       </div>
-      <button class="ghost" data-refresh>Refresh</button>
+      <button class="ghost" data-refresh>${t("common.refresh")}</button>
       <div class="traffic-dots"><i></i><i></i><i></i></div>
     </div>
   `;
@@ -170,6 +187,7 @@ function content() {
     trusted: trustedView,
     diagnostics: diagnosticsView,
     settings: settingsView,
+    app: appView,
     parity: parityView,
     advanced: advancedView
   };
@@ -183,7 +201,7 @@ function pageTitle(title, copy) {
 
 function homeView() {
   const grid = el("div", "view-stack");
-  grid.append(pageTitle("WARP connection", "Manage the local CloudflareWARP daemon through warp-cli."));
+  grid.append(pageTitle(t("home.title"), t("home.copy")));
 
   const layout = el("div", "home-grid");
   const primary = el("section", "hero-panel panel");
@@ -191,31 +209,32 @@ function homeView() {
     <div class="status-orb ${statusKind()}"><span></span></div>
     <div class="hero-copy">
       <div class="status-label">${statusText()}</div>
-      <h2>${state.snapshot?.daemon?.available ? "Private tunnel controls" : "CloudflareWARP daemon not reachable"}</h2>
-      <p>${state.snapshot?.daemon?.message || "Reading local warp-cli state..."}</p>
+      <h2>${state.snapshot?.daemon?.available ? t("home.tunnelControls") : t("home.daemonMissing")}</h2>
+      <p>${state.snapshot?.daemon?.message || t("common.loading")}</p>
     </div>
     <div class="hero-actions">
-      <button class="primary" data-action="connect">Connect</button>
-      <button class="secondary" data-action="disconnect">Disconnect</button>
+      <button class="primary tip" data-action="connect" data-tip="${escapeHtml(tip("connect"))}" tabindex="0">${t("common.connect")}</button>
+      <button class="secondary tip" data-action="disconnect" data-tip="${escapeHtml(tip("disconnect"))}" tabindex="0">${t("common.disconnect")}</button>
     </div>
   `;
   primary.querySelector('[data-action="connect"]').onclick = () => action("connect");
   primary.querySelector('[data-action="disconnect"]').onclick = () => action("disconnect");
 
   const quick = el("section", "panel quick-panel");
-  quick.innerHTML = `<div class="panel-heading"><h3>Quick Settings</h3><span>Mode, protocol, DNS</span></div>`;
-  quick.append(segmented("Mode", quickModes, "setMode", setting("Mode")));
-  quick.append(segmented("Tunnel protocol", protocols, "setProtocol", setting("Tunnel protocol", "Protocol")));
-  quick.append(segmented("Families DNS", families, "setFamilies", setting("Families mode", "DNS families")));
+  quick.innerHTML = `<div class="panel-heading"><h3>${t("home.quickSettings")}</h3><span>${t("home.quickHint")}</span></div>`;
+  quick.append(segmented(t("home.mode"), quickModes, "setMode", setting("Mode"), tip("mode")));
+  quick.append(segmented(t("home.protocol"), protocols, "setProtocol", setting("Tunnel protocol", "Protocol"), tip("protocol")));
+  quick.append(segmented(t("home.families"), families, "setFamilies", setting("Families mode", "DNS families"), tip("families")));
 
   layout.append(primary, quick);
   grid.append(layout, metrics(), liveStatePanel(), outputPanel("Last command", state.lastAction));
   return grid;
 }
 
-function segmented(label, values, actionName, current) {
+function segmented(label, values, actionName, current, tipText = "") {
   const wrap = el("div", "field-group");
-  wrap.innerHTML = `<label>${label}</label>`;
+  const tipAttr = tipText ? ` class="tip" data-tip="${escapeHtml(tipText)}" tabindex="0"` : "";
+  wrap.innerHTML = `<label${tipAttr}>${label}</label>`;
   const row = el("div", "segmented");
   values.forEach((value) => {
     const button = el("button", current?.toLowerCase?.() === value.toLowerCase() ? "selected" : "", value);
@@ -310,9 +329,9 @@ function gatewayView() {
 function tunnelView() {
   const view = el("div", "view-stack");
   view.append(pageTitle("Tunnel", "Switch WARP modes, tunnel protocols, proxy port, and virtual network."));
-  view.append(segmented("Operating mode", quickModes, "setMode", setting("Mode")));
-  view.append(segmented("Preferred protocol", protocols, "setProtocol", setting("Tunnel protocol", "Protocol")));
-  view.append(segmented("MASQUE options", masqueOptions, "setMasqueOptions", setting("HTTP Version", "MASQUE Protocol Settings")));
+  view.append(segmented("Operating mode", quickModes, "setMode", setting("Mode"), tip("mode")));
+  view.append(segmented("Preferred protocol", protocols, "setProtocol", setting("Tunnel protocol", "Protocol"), tip("protocol")));
+  view.append(segmented("MASQUE options", masqueOptions, "setMasqueOptions", setting("HTTP Version", "MASQUE Protocol Settings"), tip("masque")));
   view.append(formPanel("Proxy and VNet", [
     ["SOCKS proxy port", "proxyPort", "Set proxy port", () => action("setProxyPort", state.forms.proxyPort)],
     ["Virtual network", "vnet", "Set VNet", () => action("setVnet", state.forms.vnet)],
@@ -325,7 +344,7 @@ function tunnelView() {
 
 function splitView() {
   const view = el("div", "view-stack");
-  view.append(pageTitle("Split Tunnel", "Review and edit split tunnel IP and host routing from warp-cli."));
+  view.append(pageTitle("Split Tunnel", tip("splitTunnel")));
   view.append(formPanel("Routes", [
     ["IP or CIDR", "splitIp", "Add IP", () => action("addSplitIp", state.forms.splitIp)],
     ["Host name", "splitHost", "Add host", () => action("addSplitHost", state.forms.splitHost)]
@@ -354,7 +373,7 @@ function diagnosticsView() {
 
 function settingsView() {
   const view = el("div", "view-stack");
-  view.append(pageTitle("Settings", "General WARP client settings and administrative controls."));
+  view.append(pageTitle("WARP Settings", "General WARP client settings and administrative controls."));
   view.append(segmented("Compliance environment", ["Normal", "FedRAMP-High"], "setEnvironment", setting("Compliance Environment")));
   view.append(formPanel("Administrative override", [
     ["Override code", "overrideCode", "Apply code", () => action("overrideCode", state.forms.overrideCode, null, true)],
@@ -368,6 +387,293 @@ function settingsView() {
   view.append(outputPanel("MDM configs", state.snapshot?.commands?.mdm));
   view.append(outputPanel("Alternate network", state.snapshot?.commands?.alternateNetwork));
   return view;
+}
+
+function appView() {
+  const view = el("div", "view-stack");
+  view.append(pageTitle(t("app.title"), t("app.copy")));
+
+  const general = el("section", "panel");
+  general.innerHTML = `<div class="panel-heading"><h3>${t("app.general")}</h3><span>locale</span></div>`;
+  const localeRow = el("label", "input-row");
+  localeRow.innerHTML = `<span>${t("app.locale")}</span><select data-locale><option value="en">English</option></select><button class="secondary" data-save-locale>${t("common.save")}</button>`;
+  localeRow.querySelector("[data-locale]").value = getLocale();
+  localeRow.querySelector("[data-save-locale]").onclick = async () => {
+    const next = localeRow.querySelector("[data-locale]").value;
+    await fetch("/api/config/session", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ config: { ui: { locale: next } } })
+    });
+    await loadLocale(next);
+    render();
+  };
+  general.append(localeRow);
+
+  const about = el("section", "panel");
+  const version = state.version?.version || "…";
+  const format = state.version?.installFormat || "…";
+  about.innerHTML = `
+    <div class="panel-heading"><h3>${t("app.about")}</h3><span>ThirdFlare</span></div>
+    <div class="state-grid">
+      <div class="state-datum"><span>${t("app.currentVersion")}</span><strong>${escapeHtml(version)}</strong></div>
+      <div class="state-datum"><span>${t("app.installFormat")}</span><strong>${escapeHtml(format)}</strong></div>
+    </div>
+  `;
+
+  view.append(general, updatesPanel(), about);
+  return view;
+}
+
+function updatesPanel() {
+  const panel = el("section", "panel updates-panel");
+  const channel = state.appConfig?.updates?.channel || "stable";
+  const source = state.appConfig?.updates?.source || { owner: "oldrepublicwizard", repo: "cloudflare-one-gui-linux" };
+  const draft = state.update.sourceDraft || `${source.owner}/${source.repo}`;
+  const result = state.update.result;
+
+  panel.innerHTML = `<div class="panel-heading"><h3>${t("app.updates")}</h3><span>${escapeHtml(draft)}</span></div>`;
+
+  const channelRow = el("div", "field-group");
+  channelRow.innerHTML = `<label class="tip" data-tip="${escapeHtml(tip("channel"))}" tabindex="0">${t("app.channel")}</label>`;
+  const channelSeg = el("div", "segmented");
+  ["stable", "beta"].forEach((value) => {
+    const button = el("button", channel === value ? "selected" : "", t(`app.${value}`));
+    button.onclick = async () => {
+      await saveUpdatePrefs({ channel: value });
+      await runUpdateCheck();
+    };
+    channelSeg.append(button);
+  });
+  channelRow.append(channelSeg);
+
+  const sourceRow = el("label", "input-row");
+  sourceRow.innerHTML = `
+    <span class="tip" data-tip="${escapeHtml(tip("source"))}" tabindex="0">${t("app.source")}</span>
+    <input data-source value="${escapeHtml(draft)}" />
+    <button class="secondary" data-save-source>${t("common.save")}</button>
+  `;
+  sourceRow.querySelector("[data-source]").oninput = (event) => {
+    state.update.sourceDraft = event.target.value;
+  };
+  sourceRow.querySelector("[data-save-source]").onclick = async () => {
+    const [owner, repo] = String(state.update.sourceDraft || draft).split("/", 2);
+    if (!owner || !repo) {
+      state.error = "Source must be owner/repo";
+      render();
+      return;
+    }
+    await saveUpdatePrefs({ source: { owner, repo } });
+    state.update.showForks = false;
+    await runUpdateCheck();
+    await loadReleases();
+  };
+
+  const actions = el("div", "button-row");
+  const checkBtn = el("button", "primary tip", t("common.checkNow"));
+  checkBtn.setAttribute("data-tip", tip("checkUpdates"));
+  checkBtn.tabIndex = 0;
+  checkBtn.onclick = () => runUpdateCheck();
+  const forksBtn = el("button", "secondary", t("common.browseForks"));
+  forksBtn.onclick = async () => {
+    state.update.showForks = !state.update.showForks;
+    if (state.update.showForks) await loadForks();
+    else render();
+  };
+  const releasesBtn = el("button", "secondary", t("common.pickRelease"));
+  releasesBtn.onclick = async () => {
+    state.update.showReleases = !state.update.showReleases;
+    if (state.update.showReleases) await loadReleases();
+    else render();
+  };
+  actions.append(checkBtn, forksBtn, releasesBtn);
+
+  panel.append(channelRow, sourceRow, actions);
+
+  if (state.update.checking) {
+    panel.append(el("p", "muted", t("common.loading")));
+  }
+
+  if (result) {
+    const card = el("div", "update-card");
+    let statusText = t("app.upToDate");
+    if (result.updateAvailable) statusText = t("app.updateAvailable", { version: result.latest });
+    if (result.downgrade) statusText = t("app.downgradeWarn");
+    card.innerHTML = `
+      <strong>${escapeHtml(statusText)}</strong>
+      <p>${escapeHtml(result.release?.name || result.latest || "")}</p>
+      <pre class="release-notes">${escapeHtml((result.release?.body || "").slice(0, 1200) || t("app.releaseNotes"))}</pre>
+    `;
+    const cta = el("div", "button-row");
+    if (result.installFormat === "appimage" && (result.updateAvailable || state.update.selectedTag)) {
+      const applyBtn = el("button", "primary", t("common.apply"));
+      applyBtn.onclick = () => applySelectedUpdate();
+      cta.append(applyBtn);
+    } else if (result.guidedCommands?.length) {
+      const showBtn = el("button", "secondary", t("common.showCommands"));
+      showBtn.onclick = () => {
+        state.toast = result.guidedCommands.join("\n");
+        render();
+      };
+      cta.append(showBtn);
+    }
+    card.append(cta);
+    panel.append(card);
+  }
+
+  if (state.update.showForks && state.update.forks.length) {
+    const list = el("div", "fork-list");
+    list.innerHTML = `<p class="muted">${t("app.forkHint")}</p>`;
+    state.update.forks.forEach((fork) => {
+      const item = el("button", "fork-item", `${fork.fullName || `${fork.owner}/${fork.repo}`}${fork.stars != null ? ` ★${fork.stars}` : ""}`);
+      item.onclick = async () => {
+        await saveUpdatePrefs({ source: { owner: fork.owner, repo: fork.repo } });
+        state.update.sourceDraft = `${fork.owner}/${fork.repo}`;
+        state.update.showForks = false;
+        await runUpdateCheck();
+        await loadReleases();
+      };
+      list.append(item);
+    });
+    panel.append(list);
+  }
+
+  if (state.update.showReleases) {
+    const list = el("div", "release-list");
+    if (!state.update.releases.length) {
+      list.append(el("p", "muted", t("app.noReleases")));
+    } else {
+      state.update.releases.forEach((release) => {
+        const selected = state.update.selectedTag === release.tag ? " selected" : "";
+        const item = el("button", `release-item${selected}`, `${release.tag}${release.prerelease ? " (pre)" : ""}`);
+        item.onclick = () => {
+          state.update.selectedTag = release.tag;
+          if (state.update.result) {
+            state.update.result = {
+              ...state.update.result,
+              latest: release.tag.replace(/^v/i, ""),
+              release,
+              downgrade: false,
+              updateAvailable: true
+            };
+          }
+          render();
+        };
+        list.append(item);
+      });
+    }
+    panel.append(list);
+  }
+
+  return panel;
+}
+
+async function saveUpdatePrefs(partial) {
+  const response = await fetch("/api/config/session", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ config: { updates: partial } })
+  });
+  const body = await response.json();
+  state.appConfig = body.config;
+  if (partial.source) {
+    state.update.sourceDraft = `${partial.source.owner}/${partial.source.repo}`;
+  }
+}
+
+async function loadAppPanel() {
+  try {
+    const [versionRes, configRes] = await Promise.all([
+      fetch("/api/version"),
+      fetch("/api/config")
+    ]);
+    state.version = await versionRes.json();
+    const configBody = await configRes.json();
+    state.appConfig = configBody.config;
+    const source = state.appConfig?.updates?.source;
+    if (source) state.update.sourceDraft = `${source.owner}/${source.repo}`;
+  } catch (error) {
+    state.error = error.message;
+  }
+  render();
+}
+
+async function runUpdateCheck() {
+  state.update.checking = true;
+  state.error = null;
+  render();
+  try {
+    const response = await fetch("/api/update/check");
+    state.update.result = await response.json();
+  } catch (error) {
+    state.error = error.message;
+  }
+  state.update.checking = false;
+  render();
+}
+
+async function loadForks() {
+  try {
+    const response = await fetch("/api/update/forks");
+    const body = await response.json();
+    state.update.forks = body.forks || [];
+  } catch (error) {
+    state.error = error.message;
+  }
+  render();
+}
+
+async function loadReleases() {
+  try {
+    const response = await fetch("/api/update/releases");
+    const body = await response.json();
+    state.update.releases = body.releases || [];
+  } catch (error) {
+    state.error = error.message;
+  }
+  render();
+}
+
+async function applySelectedUpdate() {
+  state.busy = true;
+  render();
+  try {
+    const response = await fetch("/api/update/apply", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ tag: state.update.selectedTag || undefined })
+    });
+    const body = await response.json();
+    if (body.mode === "guided") {
+      state.toast = (body.commands || []).join("\n");
+    } else if (body.applied) {
+      state.toast = t("app.restartRequired");
+    } else if (body.error) {
+      state.error = body.error;
+    }
+  } catch (error) {
+    state.error = error.message;
+  }
+  state.busy = false;
+  render();
+}
+
+async function maybeStartupUpdateCheck() {
+  try {
+    const configRes = await fetch("/api/config");
+    const configBody = await configRes.json();
+    state.appConfig = configBody.config;
+    if (!configBody.config?.updates?.checkOnStartup) return;
+    const response = await fetch("/api/update/check");
+    const result = await response.json();
+    if (result.updateAvailable) {
+      state.toast = t("app.updateAvailable", { version: result.latest });
+      state.update.result = result;
+      render();
+    }
+  } catch {
+    // non-blocking
+  }
 }
 
 function trustedView() {
@@ -511,13 +817,36 @@ function render() {
   app.append(shell());
   if (state.busy) app.append(el("div", "busy", "Running warp-cli command..."));
   if (state.error) app.append(el("div", "toast", escapeHtml(state.error)));
+  if (state.toast) {
+    const toast = el("div", "toast info", `<pre>${escapeHtml(state.toast)}</pre><button class="ghost" data-dismiss>Dismiss</button>`);
+    toast.querySelector("[data-dismiss]").onclick = () => {
+      state.toast = null;
+      render();
+    };
+    app.append(toast);
+  }
 }
 
-render();
-refresh();
-connectLiveEvents();
-registerServiceWorker();
-setInterval(refresh, 20000);
+async function boot() {
+  let locale = "en";
+  try {
+    const configRes = await fetch("/api/config");
+    const configBody = await configRes.json();
+    state.appConfig = configBody.config;
+    locale = configBody.config?.ui?.locale || "en";
+  } catch {
+    // defaults
+  }
+  await loadLocale(locale);
+  render();
+  await refresh();
+  connectLiveEvents();
+  registerServiceWorker();
+  setInterval(refresh, 20000);
+  maybeStartupUpdateCheck();
+}
+
+boot();
 
 function connectLiveEvents() {
   if (!window.EventSource) {

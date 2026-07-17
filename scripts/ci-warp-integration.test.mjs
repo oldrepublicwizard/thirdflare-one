@@ -103,6 +103,16 @@ test("/api/health returns app identity", async () => {
   assert.equal(res.status, 200);
   assert.equal(res.json.ok, true);
   assert.equal(res.json.app, "thirdflare");
+  assert.ok(res.json.version, "health should include semver");
+});
+
+test("/api/version returns channel and source", async () => {
+  const res = await httpJson("GET", "/api/version");
+  assert.equal(res.status, 200);
+  assert.equal(res.json.ok, true);
+  assert.ok(res.json.version);
+  assert.equal(res.json.channel, "stable");
+  assert.equal(res.json.source.owner, "oldrepublicwizard");
 });
 
 test("/api/snapshot reports warp daemon and network debug", async () => {

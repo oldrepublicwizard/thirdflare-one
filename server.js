@@ -13,6 +13,10 @@ import {
   reloadConfig,
   setSessionOverrides
 } from "./lib/config.mjs";
+import { getVersion, getVersionInfo } from "./lib/version.mjs";
+import { applyUpdate, checkForUpdate } from "./lib/update/index.mjs";
+import { listForks, listReleases } from "./lib/update/github.mjs";
+import { detectInstallFormat } from "./lib/update/detect-format.mjs";
 
 const root = fileURLToPath(new URL(".", import.meta.url));
 const publicRoot = join(root, "public");
@@ -24,6 +28,7 @@ const MIME = {
   ".html": "text/html; charset=utf-8",
   ".css": "text/css; charset=utf-8",
   ".js": "text/javascript; charset=utf-8",
+  ".mjs": "text/javascript; charset=utf-8",
   ".json": "application/json; charset=utf-8",
   ".svg": "image/svg+xml"
 };
@@ -332,8 +337,57 @@ async function handleApi(req, res, url) {
         ok: true,
         app: APP_ID,
         name: APP_DISPLAY_NAME,
+        version: getVersion(),
         generatedAt: new Date().toISOString()
       });
+      return;
+    }
+
+    if (req.method === "GET" && url.pathname === "/api/version") {
+      const active = getConfig();
+      json(res, 200, {
+        ok: true,
+        ...getVersionInfo(active),
+        installFormat: detectInstallFormat()
+      });
+      return;
+    }
+
+    if (req.method === "GET" && url.pathname === "/api/update/check") {
+      const result = await checkForUpdate(getConfig());
+      json(res, 200, result);
+      return;
+    }
+
+    if (req.method === "GET" && url.pathname === "/api/update/releases") {
+      const active = getConfig();
+      const owner = url.searchParams.get("owner") || active.updates?.source?.owner;
+      const repo = url.searchParams.get("repo") || active.updates?.source?.repo;
+      const releases = await listReleases({ owner, repo });
+      json(res, 200, { ok: true, source: { owner, repo }, releases });
+      return;
+    }
+
+    if (req.method === "GET" && url.pathname === "/api/update/forks") {
+      const active = getConfig();
+      const owner = url.searchParams.get("owner") || active.updates?.source?.owner || "oldrepublicwizard";
+      const repo = url.searchParams.get("repo") || active.updates?.source?.repo || "cloudflare-one-gui-linux";
+      const forks = await listForks({ owner, repo });
+      json(res, 200, {
+        ok: true,
+        upstream: { owner, repo },
+        forks: [
+          { owner, repo, fullName: `${owner}/${repo}`, stars: null, upstream: true },
+          ...forks
+        ]
+      });
+      return;
+    }
+
+    if (req.method === "POST" && url.pathname === "/api/update/apply") {
+      const body = await readJson(req);
+      const result = await applyUpdate(getConfig(), body);
+      json(res, result.ok === false ? 400 : 200, result);
       return;
     }
 

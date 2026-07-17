@@ -46,6 +46,7 @@ Usage:
   thirdflare --toggle           Connect if disconnected, otherwise disconnect
   thirdflare --warp-status      Print warp-cli status
   thirdflare --tray             Start the optional tray menu
+  thirdflare --version          Print ThirdFlare version
   thirdflare --help             Show this help
 
 Legacy alias: cloudflare-one-gui (same binary)
@@ -191,6 +192,9 @@ toggle_warp() {
 case "${1:-}" in
   --help|-h)
     usage
+    ;;
+  --version|-V)
+    "$NODE_BIN" --input-type=module -e "import { getVersion } from 'file://$APP_DIR/lib/version.mjs'; console.log(getVersion());"
     ;;
   --status)
     if is_running && health_ok; then

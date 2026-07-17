@@ -15,6 +15,7 @@ Wordplay on **third-party** + **Cloudflare**. You keep the official WARP daemon;
 - **Optional Web UI** — browser shell for the full desktop experience; **disabled by default** when the systemd daemon runs headless. Enable locally from the launcher or persistently in config.
 - **Idiomatic configuration** — systemd `EnvironmentFile`, `/etc/thirdflare/config.json`, user config, environment variables, and in-app session overrides with documented precedence.
 - **Safe by default** — localhost bind, redacted secrets in API output, no shell invocation of `warp-cli`, confirmation for destructive actions.
+- **Updates & localization** — channel/fork-aware GitHub release checks, AppImage auto-apply, tooltips, and an `en` locale framework (see [docs/UPDATES.md](docs/UPDATES.md)).
 
 ## Requirements
 
@@ -52,6 +53,7 @@ thirdflare --disconnect
 thirdflare --toggle
 thirdflare --warp-status
 thirdflare --tray          # optional yad tray
+thirdflare --version
 thirdflare --status
 thirdflare --stop
 ```

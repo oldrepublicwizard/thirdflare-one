@@ -56,6 +56,17 @@ Flatpak builds call `flatpak-spawn --host` automatically when `cli` is `warp-cli
 |-----|------|---------|-------------|
 | `openBrowser` | boolean | `true` | Launcher opens a browser when starting GUI |
 | `theme` | string | `system` | Reserved for future theme sync |
+| `locale` | string | `en` | UI locale (`public/locales/<locale>.json`) |
+
+### `updates`
+
+| Key | Type | Default | Description |
+|-----|------|---------|-------------|
+| `channel` | string | `stable` | `stable` or `beta` (prereleases) |
+| `source.owner` / `source.repo` | string | upstream GitHub repo | Release/fork source for updates |
+| `checkOnStartup` | boolean | `true` | Non-blocking update toast when Web UI is open |
+
+See [UPDATES.md](UPDATES.md) for the release → client pipeline.
 
 ## Environment variables
 
@@ -67,6 +78,13 @@ Flatpak builds call `flatpak-spawn --host` automatically when `cli` is `warp-cli
 | `THIRDFLARE_WEBUI_ALLOW_REMOTE` | `webui.allowRemote` | `1` / `0` |
 | `THIRDFLARE_WARP_CLI` | `warp.cli` | `/usr/bin/warp-cli` |
 | `WARP_CLI` | `warp.cli` | CI mock scripts |
+| `THIRDFLARE_LOCALE` | `ui.locale` | `en` |
+| `THIRDFLARE_UPDATE_CHANNEL` | `updates.channel` | `stable` / `beta` |
+| `THIRDFLARE_UPDATE_SOURCE` | `updates.source` | `owner/repo` |
+| `THIRDFLARE_UPDATE_CHECK` | `updates.checkOnStartup` | `0` to disable |
+| `THIRDFLARE_INSTALL_FORMAT` | install detection | `appimage` / `deb` / … |
+| `THIRDFLARE_APPIMAGE_PATH` | AppImage replace target | `/path/to/app.AppImage` |
+| `THIRDFLARE_GITHUB_TOKEN` | GitHub API auth | PAT for higher rate limits |
 
 Legacy `CLOUDFLARE_ONE_GUI_PORT` and `CLOUDFLARE_ONE_GUI_NODE` remain supported for migration.
 

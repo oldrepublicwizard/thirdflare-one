@@ -21,6 +21,10 @@ on:
         description: "Update homebrew-tap branch with generated Formula"
         type: boolean
         default: false
+      sync_manifest:
+        description: "Commit updated config/update-manifest.json after publish"
+        type: boolean
+        default: true
 
 permissions:
   contents: write
@@ -37,16 +41,23 @@ jobs:
       version: ${{ steps.ver.outputs.version }}
       tag: ${{ steps.ver.outputs.tag }}
       checkout_ref: ${{ steps.ver.outputs.checkout_ref }}
+      prerelease: ${{ steps.ver.outputs.prerelease }}
     steps:
       - uses: actions/checkout@v4
 
       - id: ver
         env:
           INPUT_TAG: ${{ inputs.tag }}
+          RELEASE_TAG: ${{ github.event.release.tag_name }}
+          RELEASE_PRERELEASE: ${{ github.event.release.prerelease }}
         run: |
-          if [[ -n "${{ github.event.release.tag_name }}" ]]; then
-            TAG="${{ github.event.release.tag_name }}"
+          PRERELEASE=false
+          if [[ -n "${RELEASE_TAG}" ]]; then
+            TAG="${RELEASE_TAG}"
             CHECKOUT_REF="$TAG"
+            if [[ "${RELEASE_PRERELEASE}" == "true" ]]; then
+              PRERELEASE=true
+            fi
           elif [[ -n "${INPUT_TAG}" ]]; then
             if [[ ! "${INPUT_TAG}" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?$ ]]; then
               echo "Invalid tag format: ${INPUT_TAG}" >&2
@@ -54,6 +65,9 @@ jobs:
             fi
             TAG="${INPUT_TAG}"
             CHECKOUT_REF="${INPUT_TAG}"
+            if [[ "$TAG" == *-* ]]; then
+              PRERELEASE=true
+            fi
           else
             TAG="v$(node -p "require('./package.json').version")"
             CHECKOUT_REF="${GITHUB_SHA}"
@@ -62,6 +76,7 @@ jobs:
           echo "tag=$TAG" >> "$GITHUB_OUTPUT"
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
           echo "checkout_ref=$CHECKOUT_REF" >> "$GITHUB_OUTPUT"
+          echo "prerelease=$PRERELEASE" >> "$GITHUB_OUTPUT"
 
   deb-rpm-arch:
     needs: resolve-version
@@ -364,3 +379,42 @@ jobs:
           TAG: ${{ needs.resolve-version.outputs.tag }}
         run: |
           gh release upload "$TAG" dist/packages/* --clobber
+
+  sync-manifest:
+    needs: [resolve-version, publish]
+    runs-on: ubuntu-latest
+    if: |
+      always() &&
+      needs.publish.result == 'success' &&
+      (github.event_name == 'release' || (inputs.publish_release == true && inputs.sync_manifest != false)) &&
+      startsWith(needs.resolve-version.outputs.tag, 'v')
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Update update-manifest.json
+        env:
+          VERSION: ${{ needs.resolve-version.outputs.version }}
+          TAG: ${{ needs.resolve-version.outputs.tag }}
+          PRERELEASE: ${{ needs.resolve-version.outputs.prerelease }}
+        run: |
+          ARGS=(--version "$VERSION" --tag "$TAG")
+          if [[ "$PRERELEASE" == "true" ]]; then
+            ARGS+=(--prerelease)
+          fi
+          node scripts/generate-update-manifest.mjs "${ARGS[@]}"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add config/update-manifest.json
+          if git diff --cached --quiet; then
+            echo "Manifest unchanged"
+            exit 0
+          fi
+          git commit -m "chore(release): sync update-manifest for ${TAG} [skip ci]"
+          git push origin HEAD:main

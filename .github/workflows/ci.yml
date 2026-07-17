@@ -37,7 +37,7 @@ jobs:
 
       - name: Shellcheck launchers and scripts
         run: |
-          shellcheck --severity=warning bin/cloudflare-one-gui bin/cloudflare-one-tray
+          shellcheck --severity=warning bin/thirdflare bin/thirdflare-tray bin/cloudflare-one-gui bin/cloudflare-one-tray
           shellcheck --severity=warning scripts/*.sh packaging/scripts/*.sh packaging/usr-bin-wrapper.sh packaging/appimage/AppRun
           chmod +x scripts/mock-warp-cli.sh scripts/ci-real-warp-smoke.sh
 
@@ -65,6 +65,9 @@ jobs:
         run: |
           chmod +x scripts/mock-warp-cli.sh
           npm run test:integration
+
+      - name: Run update engine unit tests
+        run: npm run test:update
 
   warp-real:
     name: WARP real smoke (optional)

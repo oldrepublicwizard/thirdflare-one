@@ -12,6 +12,15 @@
   },
   "ui": {
     "openBrowser": true,
-    "theme": "system"
+    "theme": "system",
+    "locale": "en"
+  },
+  "updates": {
+    "channel": "stable",
+    "source": {
+      "owner": "oldrepublicwizard",
+      "repo": "cloudflare-one-gui-linux"
+    },
+    "checkOnStartup": true
   }
 }

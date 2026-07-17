@@ -1,0 +1,79 @@
+{
+  "nav": {
+    "home": "Home",
+    "account": "Account",
+    "gateway": "Gateway DNS",
+    "tunnel": "Tunnel",
+    "split": "Split Tunnel",
+    "trusted": "Trusted Networks",
+    "diagnostics": "Diagnostics",
+    "settings": "WARP Settings",
+    "app": "App",
+    "parity": "Parity",
+    "advanced": "Advanced"
+  },
+  "brand": {
+    "title": "ThirdFlare",
+    "subtitle": "Unofficial Cloudflare One · cross-platform"
+  },
+  "common": {
+    "refresh": "Refresh",
+    "live": "Live",
+    "polling": "Polling",
+    "connect": "Connect",
+    "disconnect": "Disconnect",
+    "save": "Save",
+    "checkNow": "Check now",
+    "apply": "Download & restart",
+    "showCommands": "Show install commands",
+    "browseForks": "Browse forks",
+    "pickRelease": "Pick release",
+    "unknown": "Unknown",
+    "loading": "Loading…"
+  },
+  "home": {
+    "title": "WARP connection",
+    "copy": "Manage the local CloudflareWARP daemon through warp-cli.",
+    "tunnelControls": "Private tunnel controls",
+    "daemonMissing": "CloudflareWARP daemon not reachable",
+    "quickSettings": "Quick Settings",
+    "quickHint": "Mode, protocol, DNS",
+    "mode": "Mode",
+    "protocol": "Tunnel protocol",
+    "families": "Families DNS"
+  },
+  "app": {
+    "title": "App",
+    "copy": "ThirdFlare preferences, localization, and updates.",
+    "general": "General",
+    "locale": "Language",
+    "updates": "Updates",
+    "about": "About",
+    "channel": "Release channel",
+    "source": "Update source (owner/repo)",
+    "checkOnStartup": "Check for updates on startup",
+    "currentVersion": "Current version",
+    "installFormat": "Install format",
+    "updateAvailable": "Update available: {version}",
+    "upToDate": "You are up to date.",
+    "downgradeWarn": "Selected release is older than the installed version.",
+    "restartRequired": "Update applied. Restart ThirdFlare to finish.",
+    "releaseNotes": "Release notes",
+    "stable": "Stable",
+    "beta": "Beta",
+    "noReleases": "No releases found for this repository.",
+    "forkHint": "Choose the upstream repo or a fork that publishes compatible release assets."
+  },
+  "tips": {
+    "mode": "WARP operating mode (warp, DoH, DoT, proxy, tunnel-only).",
+    "protocol": "Preferred tunnel protocol: MASQUE or WireGuard.",
+    "families": "Cloudflare DNS filtering: off, malware, or full.",
+    "masque": "HTTP version preference when using MASQUE.",
+    "splitTunnel": "Exclude IPs or hosts from the WARP tunnel.",
+    "connect": "Connect the CloudflareWARP tunnel.",
+    "disconnect": "Disconnect the CloudflareWARP tunnel.",
+    "channel": "Stable uses the latest non-prerelease; beta prefers prereleases.",
+    "source": "GitHub owner/repo used for update checks and release assets.",
+    "checkUpdates": "Compare the installed version to the selected channel or release."
+  }
+}
