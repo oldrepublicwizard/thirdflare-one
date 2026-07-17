@@ -755,13 +755,13 @@ function parityView() {
     ["Zero Trust policy", "Compliance environment, MDM configs, support URL, mode-switch policy, overrides."],
     ["Diagnostics", "Stats, tunnel stats, DNS stats, certs, DEX, posture, network, alternate network."],
     ["Desktop integration", "Desktop launcher, menu entry, icon, installable web app manifest, shell cache."],
-    ["Tray quick menu", "Optional yad tray menu for open, connect, disconnect, toggle, and status actions."]
+    ["Tray quick menu", "Optional yad tray menu for open, connect, disconnect, toggle, and status actions."],
+    ["Notification center", "Daemon emits native desktop notifications on WARP connect/disconnect via notify-send (ui.notifications)."]
   ], "done"));
   view.append(parityPanel("Remaining native gaps", [
     ["First-class tray packaging", "The yad tray works when available; a bundled AppIndicator/Electron/Tauri tray still needs native packaging."],
     ["Native packaging", "Needs Electron, Tauri, WebKitGTK, or distro packages for a self-contained app."],
     ["Privileged flows", "Endpoint and policy-changing commands may need a privilege broker/polkit flow."],
-    ["Notification center", "Connection changes should emit native desktop notifications."],
     ["Exact Windows visuals", "The shell is Windows-like, but not a pixel clone of the proprietary Windows client."]
   ], "gap"));
   return view;

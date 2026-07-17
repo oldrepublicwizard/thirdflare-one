@@ -73,7 +73,8 @@ before(async () => {
     env: {
       ...process.env,
       PORT: String(port),
-      WARP_CLI: mockWarp
+      WARP_CLI: mockWarp,
+      THIRDFLARE_NOTIFICATIONS: "0"
     },
     stdio: "pipe"
   });

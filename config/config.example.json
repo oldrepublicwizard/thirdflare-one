@@ -13,7 +13,8 @@
   "ui": {
     "openBrowser": true,
     "theme": "system",
-    "locale": "en"
+    "locale": "en",
+    "notifications": true
   },
   "updates": {
     "channel": "stable",

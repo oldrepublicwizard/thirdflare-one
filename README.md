@@ -120,6 +120,7 @@ brew install cloudflare-one-gui   # formula alias; becomes thirdflare over time
 | Area | Status |
 |------|--------|
 | Windows / native shells (Electron, Tauri, AppIndicator) | Planned — Web UI is v1 |
+| Desktop notifications on connect/disconnect | Done — `ui.notifications` + `notify-send` |
 | CSRF token on `/api/action` | Not yet — localhost trust model |
 | Persist in-app settings to `~/.config/thirdflare` | Session-only today; use config files for persistence |
 | Full parity matrix vs Windows One | Tracked in-app on Parity page |

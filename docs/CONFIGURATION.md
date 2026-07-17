@@ -57,6 +57,7 @@ Flatpak builds call `flatpak-spawn --host` automatically when `cli` is `warp-cli
 | `openBrowser` | boolean | `true` | Launcher opens a browser when starting GUI |
 | `theme` | string | `system` | Reserved for future theme sync |
 | `locale` | string | `en` | UI locale (`public/locales/<locale>.json`) |
+| `notifications` | boolean | `true` | Desktop notifications on WARP connect/disconnect (requires `notify-send`) |
 
 ### `updates`
 
@@ -79,6 +80,8 @@ See [UPDATES.md](UPDATES.md) for the release → client pipeline.
 | `THIRDFLARE_WARP_CLI` | `warp.cli` | `/usr/bin/warp-cli` |
 | `WARP_CLI` | `warp.cli` | CI mock scripts |
 | `THIRDFLARE_LOCALE` | `ui.locale` | `en` |
+| `THIRDFLARE_NOTIFICATIONS` | `ui.notifications` | `1` / `0` |
+| `THIRDFLARE_DISABLE_NOTIFICATIONS` | (runtime) | `1` skips notify-send even if enabled |
 | `THIRDFLARE_UPDATE_CHANNEL` | `updates.channel` | `stable` / `beta` |
 | `THIRDFLARE_UPDATE_SOURCE` | `updates.source` | `owner/repo` |
 | `THIRDFLARE_UPDATE_CHECK` | `updates.checkOnStartup` | `0` to disable |
@@ -142,8 +145,10 @@ curl -s http://127.0.0.1:4173/api/config | jq
 
 Apply provisional overrides (lost on daemon restart unless written to disk separately).
 
-Session may set `ui.*` and `updates.channel` / `updates.checkOnStartup` only.  
+Session may set `ui.locale` / `ui.theme` / `ui.openBrowser` / `ui.notifications` and `updates.channel` / `updates.checkOnStartup` only.  
 `updates.source`, `warp.*`, `server.*`, and `webui.*` are **not** session-overridable (edit config file or env instead).
+
+Note: changing `ui.notifications` in-session does not restart the status watcher until the daemon restarts.
 
 ```bash
 curl -s -X POST http://127.0.0.1:4173/api/config/session \

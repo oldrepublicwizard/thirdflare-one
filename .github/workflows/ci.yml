@@ -69,6 +69,9 @@ jobs:
       - name: Run update engine unit tests
         run: npm run test:update
 
+      - name: Run notification unit tests
+        run: npm run test:notify
+
   warp-real:
     name: WARP real smoke (optional)
     runs-on: ubuntu-latest

@@ -18,6 +18,8 @@ import { applyUpdate, checkForUpdate, prepareApply } from "./lib/update/index.mj
 import { listForks, listReleases } from "./lib/update/github.mjs";
 import { detectInstallFormat } from "./lib/update/detect-format.mjs";
 import { isSafeGithubRef } from "./lib/update/detect-format.mjs";
+import { parseStatus } from "./lib/warp/status.mjs";
+import { startStatusWatcher } from "./lib/notify/status-watcher.mjs";
 
 const root = fileURLToPath(new URL(".", import.meta.url));
 const publicRoot = join(root, "public");
@@ -146,26 +148,6 @@ function runWarp(args, options = {}) {
       });
     });
   });
-}
-
-function parseStatus(text) {
-  const clean = text.replace(/\r/g, "").trim();
-  const lower = clean.toLowerCase();
-  const disconnected = /\b(disconnected|not connected)\b/.test(lower);
-  const connecting = !disconnected && /\b(connecting|reconnecting)\b/.test(lower);
-  const connected = !disconnected && !connecting && /\bconnected\b/.test(lower);
-  const registrationMissing = lower.includes("registration missing") || lower.includes("not registered");
-  const healthy = lower.includes("network: healthy") || lower === "healthy";
-  const unhealthy = lower.includes("unhealthy") || lower.includes("degraded");
-
-  return {
-    label: clean || "Unavailable",
-    connected,
-    connecting,
-    disconnected,
-    registrationMissing,
-    severity: connected || healthy ? "good" : connecting || unhealthy ? "warn" : "bad"
-  };
 }
 
 function parseSettings(text) {
@@ -559,4 +541,20 @@ createServer(async (req, res) => {
   if (!getConfig().webui?.enabled) {
     console.log("Web UI disabled (webui.enabled=false). API and launcher quick actions remain available.");
   }
+
+  const notifyWatcher = startStatusWatcher({
+    spawnWarpCli,
+    enabled: getConfig().ui?.notifications !== false,
+    env: process.env
+  });
+  if (notifyWatcher.started) {
+    console.log("Desktop notifications enabled (ui.notifications).");
+  }
+
+  const shutdown = () => {
+    notifyWatcher.stop();
+    process.exit(0);
+  };
+  process.on("SIGINT", shutdown);
+  process.on("SIGTERM", shutdown);
 });

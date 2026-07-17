@@ -23,7 +23,8 @@
 - `npm run check` — syntax including config, update modules, and UI.
 - `npm run test:integration` — mock warp-cli integration tests.
 - `npm run test:update` — update engine unit tests (mocked GitHub).
-- `npm run test:all` — integration + update tests.
+- `npm run test:notify` — desktop notification / status transition tests.
+- `npm run test:all` — integration + update + notify tests.
 - `./bin/thirdflare` / `./bin/thirdflare --version` — launcher.
 - `npm run package:*` — see `docs/PACKAGING.md`.
 

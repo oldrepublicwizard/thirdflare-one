@@ -35,6 +35,8 @@ flowchart LR
 | `public/` | Web UI (PWA-capable), optional when `webui.enabled=false` |
 | `bin/thirdflare` | Launcher: port selection, daemon lifecycle, browser open |
 | `bin/thirdflare-tray` | Optional `yad` notification-area menu |
+| `lib/warp/status.mjs` | Shared `warp-cli` status parsing |
+| `lib/notify/` | Desktop notifications (`notify-send`) + status watcher |
 | `scripts/health-check.mjs` | Used by launcher and CI to verify `/api/health` |
 
 ## API surface
