@@ -5,6 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.1](https://github.com/oldrepublicwizard/cloudflare-one-gui-linux/compare/v0.2.0...v0.2.1) (2026-07-17)
+
+
+### Features
+
+* desktop notifications on WARP status transitions ([f357041](https://github.com/oldrepublicwizard/cloudflare-one-gui-linux/commit/f357041e41fdfb7f8fda6b60000ba14d241e1e0f))
+* emit desktop notifications on WARP status transitions ([e4bd3b1](https://github.com/oldrepublicwizard/cloudflare-one-gui-linux/commit/e4bd3b1abf26c7fd68d8aa6c158620d95e1f8745))
+
 ## [0.2.0](https://github.com/oldrepublicwizard/cloudflare-one-gui-linux/compare/v0.1.0...v0.2.0) (2026-07-17)
 
 
