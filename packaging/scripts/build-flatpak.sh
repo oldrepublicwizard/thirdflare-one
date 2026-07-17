@@ -24,7 +24,22 @@ flatpak install -y --user flathub org.freedesktop.Platform//24.08 org.freedeskto
 # Patch metainfo release version for this build.
 sed -i "s/version=\"[0-9.][0-9.]*\"/version=\"${VERSION}\"/" "$METAINFO"
 
-flatpak-builder --force-clean --user --repo="$REPO_DIR" "$BUILD_DIR" "$MANIFEST"
+flatpak-builder --force-clean --user --build-only "$BUILD_DIR" "$MANIFEST"
+
+flatpak build-finish "$BUILD_DIR" \
+  --command=cloudflare-one-gui \
+  --share=network \
+  --share=ipc \
+  --socket=x11 \
+  --socket=wayland \
+  --socket=fallback-x11 \
+  --device=dri \
+  --filesystem=xdg-run \
+  --filesystem=xdg-cache \
+  --talk-name=org.freedesktop.Flatpak \
+  --talk-name=org.freedesktop.Notifications
+
+flatpak build-export --no-update-appstream "$REPO_DIR" "$BUILD_DIR"
 flatpak build-bundle "$REPO_DIR" \
   "${OUT}/cloudflare-one-gui-${VERSION}-x86_64.flatpak" \
   "$APP_ID"
