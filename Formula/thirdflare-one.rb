@@ -1,8 +1,8 @@
 class ThirdflareOne < Formula
   desc "ThirdFlare One — unofficial Cloudflare One client via warp-cli"
   homepage "https://github.com/oldrepublicwizard/thirdflare-one"
-  url "https://github.com/oldrepublicwizard/thirdflare-one/releases/download/v0.2.5/thirdflare-one-0.2.5-src.tar.gz"
-  sha256 "9da912a7de185e95e87ee4745371217e3bc56c242e5561f5cce13d1cf89cb7e2"
+  url "https://github.com/oldrepublicwizard/thirdflare-one/releases/download/v0.2.6/thirdflare-one-0.2.6-src.tar.gz"
+  sha256 "12d49b7082eee86b55b802025b00453a329d4dbea247acbe8eb5b23430a15d30"
   license "MIT"
 
   depends_on "node@20"
