@@ -355,12 +355,15 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           FORMULA_TMP="$(mktemp)"
           cp homebrew-tap/Formula/cloudflare-one-gui.rb "$FORMULA_TMP"
+          # Generated Formula lives under ./homebrew-tap/; remove it so the
+          # branch name is not ambiguous with that directory (git exit 128).
+          rm -rf homebrew-tap
           git fetch origin homebrew-tap || true
           if git show-ref --verify --quiet refs/remotes/origin/homebrew-tap; then
-            git checkout homebrew-tap
+            git switch -C homebrew-tap --track origin/homebrew-tap
             git reset --hard origin/homebrew-tap
           else
-            git checkout --orphan homebrew-tap
+            git switch --orphan homebrew-tap
             git rm -rf . 2>/dev/null || true
           fi
           mkdir -p Formula
@@ -368,7 +371,7 @@ jobs:
           rm -f "$FORMULA_TMP"
           git add Formula/cloudflare-one-gui.rb
           git commit -m "chore(homebrew): cloudflare-one-gui ${{ needs.resolve-version.outputs.version }}" || true
-          git push origin homebrew-tap --force
+          git push origin HEAD:homebrew-tap --force
 
   publish:
     needs: [resolve-version, deb-rpm-arch, appimage, source, flatpak, snap, homebrew]
