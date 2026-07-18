@@ -1,8 +1,8 @@
 class CloudflareOneGui < Formula
   desc "Desktop-style GUI for Cloudflare WARP via warp-cli"
   homepage "https://github.com/oldrepublicwizard/cloudflare-one-gui-linux"
-  url "https://github.com/oldrepublicwizard/cloudflare-one-gui-linux/releases/download/v0.2.2/cloudflare-one-gui-0.2.2-src.tar.gz"
-  sha256 "d2fd975a354feb242b933bf4703d16f891d34dbbf43797fcecc3f921a4691d06"
+  url "https://github.com/oldrepublicwizard/cloudflare-one-gui-linux/releases/download/v0.2.3/cloudflare-one-gui-0.2.3-src.tar.gz"
+  sha256 "4907bc39fd0b2e8ab7bbbf0bdb49b9bf1699b4ec9dd61ef8b752ec3acc098e63"
   license "MIT"
 
   depends_on "node@20"
