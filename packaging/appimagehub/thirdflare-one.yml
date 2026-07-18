@@ -11,5 +11,5 @@ description: Unofficial Cloudflare One client via warp-cli
 installations:
   - type: file
     url: https://github.com/oldrepublicwizard/thirdflare-one/releases/download/v0.2.6/thirdflare-0.2.6-x86_64.AppImage
-    sha256: REPLACE_WITH_SHA256_FROM_RELEASE_SHA256SUMS
+    sha256: ee2550c5768eb122fc8e8bbe70a89227c89e95c37db14606e0e83a53cdd9417f
     arch: x86_64
