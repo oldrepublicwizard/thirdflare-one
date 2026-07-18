@@ -39,6 +39,10 @@ flowchart LR
 | `lib/notify/` | Desktop notifications (`notify-send`) + status watcher |
 | `scripts/health-check.mjs` | Used by launcher and CI to verify `/api/health` |
 
+## Desktop notifications
+
+When `ui.notifications` is true (default), `server.js` starts `lib/notify/status-watcher.mjs` on listen — independent of the Web UI or SSE clients. The watcher runs `warp-cli --listen status`, shares `parseStatus` from `lib/warp/status.mjs`, and calls `notify-send` (libnotify) only on meaningful transitions (connect / disconnect / daemon lost / unhealthy), debounced ~1.5s. Requires `notify-send` on `PATH`; disable with `ui.notifications: false` or `THIRDFLARE_DISABLE_NOTIFICATIONS=1`.
+
 ## API surface
 
 | Route | Method | Purpose |
