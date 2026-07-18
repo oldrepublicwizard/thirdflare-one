@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.4](https://github.com/oldrepublicwizard/thirdflare-one/compare/v0.2.3...v0.2.4) (2026-07-18)
+
+
+### Bug Fixes
+
+* **ci:** disambiguate homebrew-tap branch vs Formula dir ([#13](https://github.com/oldrepublicwizard/thirdflare-one/issues/13)) ([597b637](https://github.com/oldrepublicwizard/thirdflare-one/commit/597b637e9796a3139f08b357fdb1ea027961829b))
+
 ## [0.2.3](https://github.com/oldrepublicwizard/thirdflare-one/compare/v0.2.2...v0.2.3) (2026-07-18)
 
 
