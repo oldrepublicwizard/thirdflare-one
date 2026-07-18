@@ -10,8 +10,14 @@ Conventional Commits on main
         ▼
 release-please.yml  →  Release PR  →  GitHub Release (tag vX.Y.Z)
         │
-        ▼
-package.yml (on release published)
+        ├─ (same push run) package.yml via workflow_call
+        │     — required because GITHUB_TOKEN-created releases do not
+        │       fire other workflows' `on: release` triggers
+        │
+        └─ package.yml also still listens for `release: published`
+              (manual / non-Actions releases)
+
+package.yml
         │
         ├─ deb / rpm / AppImage / Flatpak / Snap / Docker / Homebrew
         │
@@ -26,6 +32,10 @@ If Release Please fails with *GitHub Actions is not permitted to create or appro
 1. Open the repo **Settings → Actions → General**
 2. Under **Workflow permissions**, enable **Allow GitHub Actions to create and approve pull requests**
 3. Re-run the Release Please workflow
+
+### Why Package is called from Release Please
+
+GitHub does not start new workflow runs for `release` (or other) events that were produced using the default `GITHUB_TOKEN`. Release Please publishes with that token, so `package.yml`'s `on: release` alone never runs after an automated release. The `workflow_call` job in `release-please.yml` runs Package in the same workflow graph when `release_created` is true.
 
 ## Update manifest
 

@@ -34,7 +34,7 @@ gh workflow run package.yml --ref main -f tag=v0.1.0 -f publish_release=true -f 
 
 ### Release Please
 
-Release Please bumps versions from Conventional Commits. Enable **Allow GitHub Actions to create and approve pull requests** under repo Settings → Actions → General, or the workflow fails. Published releases trigger `package.yml`, which uploads artifacts and updates `config/update-manifest.json` (see [UPDATES.md](UPDATES.md)).
+Release Please bumps versions from Conventional Commits. Enable **Allow GitHub Actions to create and approve pull requests** under repo Settings → Actions → General, or the workflow fails. When Release Please publishes a tag, it **calls** `package.yml` via `workflow_call` (same push run) so artifacts upload even though `GITHUB_TOKEN`-created releases do not trigger other workflows' `on: release` hooks. Manual/`gh release` publishes still trigger `package.yml` via `on: release`. See [UPDATES.md](UPDATES.md).
 
 ### WARP testing in CI
 
