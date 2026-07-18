@@ -74,7 +74,8 @@ before(async () => {
       ...process.env,
       PORT: String(port),
       WARP_CLI: mockWarp,
-      THIRDFLARE_NOTIFICATIONS: "0"
+      THIRDFLARE_NOTIFICATIONS: "0",
+      THIRDFLARE_NFT_NO_PKEXEC: "1"
     },
     stdio: "pipe"
   });
@@ -130,6 +131,78 @@ test("POST /api/action connect invokes mock warp-cli", async () => {
   assert.equal(res.status, 200);
   assert.equal(res.json.ok, true);
   assert.match(res.json.result.stdout, /Success/);
+});
+
+test("GET /api/account returns structured free registration", async () => {
+  const res = await httpJson("GET", "/api/account");
+  assert.equal(res.status, 200);
+  assert.equal(res.json.registered, true);
+  assert.equal(res.json.consumer, true);
+  assert.equal(res.json.license, "MOCKKEY1-MOCKKEY2-MOCKKEY3");
+  assert.ok(Array.isArray(res.json.devices));
+  assert.equal(res.json.devices[0].deviceId, "mock-device-id");
+  // Structured fields stay usable; raw command blobs redact secrets (JSON + text).
+  const raw = res.json.commands?.registration?.stdout || "";
+  assert.match(raw, /"public_key"\s*:\s*"\[redacted\]"/i);
+  assert.match(raw, /"license"\s*:\s*"\[redacted\]"/i);
+  assert.match(raw, /"device_id"\s*:\s*"\[redacted\]"/i);
+  assert.doesNotMatch(raw, /mock-public-key/);
+  assert.doesNotMatch(raw, /MOCKKEY1/);
+});
+
+test("GET /api/killswitch reports desired/active state", async () => {
+  const res = await httpJson("GET", "/api/killswitch");
+  assert.equal(res.status, 200);
+  assert.equal(typeof res.json.desired, "boolean");
+  assert.ok(res.json.active === true || res.json.active === false || res.json.active === null);
+  assert.equal(res.json.interface, "CloudflareWARP");
+});
+
+test("POST /api/killswitch disable is idempotent when inactive", async () => {
+  const res = await httpJson("POST", "/api/killswitch", { enabled: false, allowLan: false });
+  // May be 200 (removed/noop) or 502 if nft cannot mutate — both acceptable in CI.
+  assert.ok(res.status === 200 || res.status === 502, `unexpected status ${res.status}`);
+  assert.equal(res.json.desired, false);
+});
+
+test("POST /api/killswitch enable without privilege keeps desired false", async () => {
+  const res = await httpJson("POST", "/api/killswitch", { enabled: true, allowLan: false });
+  // CI has THIRDFLARE_NFT_NO_PKEXEC=1 — apply should fail and not commit session desired.
+  assert.equal(res.status, 502);
+  assert.equal(res.json.ok, false);
+  assert.equal(res.json.desired, false);
+  assert.ok(Array.isArray(res.json.guidedCommands) || typeof res.json.script === "string");
+});
+
+test("POST /api/killswitch rejects non-boolean enabled", async () => {
+  const res = await httpJson("POST", "/api/killswitch", { enabled: "yes" });
+  assert.equal(res.status, 400);
+});
+
+test("POST /api/action applyLicense and registerOrganization validate input", async () => {
+  const badLicense = await httpJson("POST", "/api/action", {
+    action: "applyLicense",
+    value: "bad;rm"
+  });
+  assert.equal(badLicense.status, 400);
+
+  const okLicense = await httpJson("POST", "/api/action", {
+    action: "applyLicense",
+    value: "MOCKKEY1-MOCKKEY2-MOCKKEY3"
+  });
+  assert.equal(okLicense.status, 200);
+
+  const badTeam = await httpJson("POST", "/api/action", {
+    action: "registerOrganization",
+    value: "bad team!"
+  });
+  assert.equal(badTeam.status, 400);
+
+  const okTeam = await httpJson("POST", "/api/action", {
+    action: "registerOrganization",
+    value: "acme-corp"
+  });
+  assert.equal(okTeam.status, 200);
 });
 
 test("POST /api/action status via runCustom is rejected safely", async () => {

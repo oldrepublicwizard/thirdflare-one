@@ -2,20 +2,19 @@
 # CI mock for warp-cli — simulates daemon responses for integration tests.
 set -euo pipefail
 
-strip_global_flags() {
-  local args=()
-  while (($#)); do
-    case "$1" in
-      --no-ansi|--no-paginate) shift ;;
-      --listen) LISTEN=1; shift ;;
-      *) args+=("$1"); shift ;;
-    esac
-  done
-  printf '%s\n' "${args[@]:-}"
-}
-
+# Parse global flags in this shell (not a subshell) so JSON/LISTEN stick.
+ARGS=()
+JSON=0
 LISTEN=0
-mapfile -t ARGS < <(strip_global_flags "$@")
+while (($#)); do
+  case "$1" in
+    --no-ansi|--no-paginate|--accept-tos) shift ;;
+    --json) JSON=1; shift ;;
+    --listen) LISTEN=1; shift ;;
+    *) ARGS+=("$1"); shift ;;
+  esac
+done
+
 CMD="${ARGS[0]:-status}"
 SUB="${ARGS[1]:-}"
 SUB2="${ARGS[2]:-}"
@@ -50,9 +49,58 @@ EOF
     ;;
   registration)
     if [[ "$SUB" == "show" ]]; then
-      echo "Registration: mock-device"
+      if [[ "$JSON" -eq 1 ]]; then
+        cat <<'EOF'
+{
+  "id": "mock-device-id",
+  "device_id": "mock-device-id",
+  "public_key": "mock-public-key",
+  "managed": false,
+  "account": {
+    "type": "free",
+    "id": "mock-account-id",
+    "license": "MOCKKEY1-MOCKKEY2-MOCKKEY3"
+  },
+  "alternate_networks": []
+}
+EOF
+      else
+        cat <<'EOF'
+Account type: Free
+ID: mock-device-id
+Device ID: mock-device-id
+Public key: mock-public-key
+Account ID: mock-account-id
+License: MOCKKEY1-MOCKKEY2-MOCKKEY3
+EOF
+      fi
     elif [[ "$SUB" == "organization" ]]; then
-      echo "Organization: mock-org"
+      if [[ "$JSON" -eq 1 ]]; then
+        echo '{"organization":""}'
+      else
+        echo "Organization:"
+      fi
+    elif [[ "$SUB" == "devices" ]]; then
+      if [[ "$JSON" -eq 1 ]]; then
+        cat <<'EOF'
+[
+  {
+    "device_id": "mock-device-id",
+    "os": "Linux",
+    "name": "ci-host",
+    "model": "Mock Hardware",
+    "active": true
+  }
+]
+EOF
+      else
+        echo "Device ID: mock-device-id"
+        echo "OS: Linux"
+        echo "Name: ci-host"
+        echo "Active: true"
+      fi
+    elif [[ "$SUB" == "new" || "$SUB" == "license" || "$SUB" == "token" || "$SUB" == "delete" ]]; then
+      echo "Success"
     else
       echo "ok"
     fi

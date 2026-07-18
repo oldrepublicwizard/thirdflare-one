@@ -47,8 +47,18 @@ sudo cp packaging/thirdflare.default /etc/default/thirdflare
 | Key | Type | Default | Description |
 |-----|------|---------|-------------|
 | `cli` | string | `warp-cli` | Path or name of the WARP CLI binary |
+| `killSwitch` | boolean | `false` | Apply ThirdFlare nftables kill switch on startup / via API |
+| `killSwitchAllowLan` | boolean | `false` | When kill switch is on, also allow RFC1918 / ULA LAN destinations |
 
 Flatpak builds call `flatpak-spawn --host` automatically when `cli` is `warp-cli`.
+
+**Kill switch:** Linux `warp-cli` has no public Always On toggle. ThirdFlare installs table `inet thirdflare_killswitch` (via `nft` or `pkexec nft`) so outbound traffic is dropped unless it uses `lo`, `CloudflareWARP`, or Cloudflare bootstrap/ingress IPs. Requires nftables and privilege to load rules. Toggle in the Home/Settings UI or:
+
+```bash
+curl -s -X POST http://127.0.0.1:4173/api/killswitch \
+  -H 'content-type: application/json' \
+  -d '{"enabled":true,"allowLan":false}'
+```
 
 ### `ui`
 
@@ -145,10 +155,10 @@ curl -s http://127.0.0.1:4173/api/config | jq
 
 Apply provisional overrides (lost on daemon restart unless written to disk separately).
 
-Session may set `ui.locale` / `ui.theme` / `ui.openBrowser` / `ui.notifications` and `updates.channel` / `updates.checkOnStartup` only.  
-`updates.source`, `warp.*`, `server.*`, and `webui.*` are **not** session-overridable (edit config file or env instead).
-
-Note: changing `ui.notifications` in-session does not restart the status watcher until the daemon restarts.
+Session may set `ui.locale` / `ui.theme` / `ui.openBrowser` / `ui.notifications` and `updates.channel` / `updates.checkOnStartup` via `/api/config/session`.  
+`updates.source` may only change through `POST /api/update/source`, which accepts the pinned upstream or one of its GitHub forks.  
+`warp.killSwitch` / `warp.killSwitchAllowLan` session state is set only by `POST /api/killswitch` after nftables apply succeeds (not via `/api/config/session`).  
+`warp.cli`, `server.*`, and `webui.*` are **not** session-overridable.
 
 ```bash
 curl -s -X POST http://127.0.0.1:4173/api/config/session \
