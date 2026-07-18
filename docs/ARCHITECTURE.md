@@ -94,13 +94,13 @@ Contract file: [`openapi/thirdflare-api.json`](../openapi/thirdflare-api.json). 
 
 ```
 /usr/bin/thirdflare
-/usr/bin/cloudflare-one-gui          # legacy wrapper
+/usr/bin/thirdflare-one-gui          # alias wrapper
 /usr/lib/thirdflare/server.js
 /usr/lib/thirdflare/lib/config.mjs
 /usr/lib/thirdflare/public/
 /etc/default/thirdflare
 /etc/thirdflare/config.json.example
-/usr/lib/systemd/user/thirdflare.service
+/usr/lib/systemd/user/thirdflare-one.service
 ```
 
 ## Testing

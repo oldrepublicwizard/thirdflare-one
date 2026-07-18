@@ -10,7 +10,7 @@ ThirdFlare One uses layered configuration so operators can manage the daemon idi
 | 2. System JSON | `/etc/thirdflare/config.json` | Fleet / machine policy |
 | 3. Environment file | `/etc/default/thirdflare` | Debian/RHEL-style `KEY=value` for systemd |
 | 4. User JSON | `~/.config/thirdflare/config.json` | Per-user preferences |
-| 5. Legacy user JSON | `~/.config/cloudflare-one-gui/config.json` | Migration from old name |
+| 5. Prior install path | `~/.config/cloudflare-one-gui/config.json` | Migrated automatically if present |
 | 6. Environment | `THIRDFLARE_*`, `WARP_CLI`, `PORT` | Containers, CI, drop-ins |
 | 7. Session | `POST /api/config/session` | In-app toggles until restart |
 
@@ -102,12 +102,12 @@ Legacy `CLOUDFLARE_ONE_GUI_PORT` and `CLOUDFLARE_ONE_GUI_NODE` remain supported 
 ### User service (recommended for desktops)
 
 ```bash
-npm run install:user-service
-systemctl --user enable --now thirdflare.service
+npm run install:service
+systemctl --user enable --now thirdflare-one.service
 systemctl --user status thirdflare
 ```
 
-Packaged path: `/usr/lib/systemd/user/thirdflare.service`
+Packaged path: `/usr/lib/systemd/user/thirdflare-one.service`
 
 The unit loads:
 

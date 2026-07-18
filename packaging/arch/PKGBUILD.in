@@ -1,11 +1,10 @@
-# Maintainer: Cloudflare One GUI for Linux contributors
-# Contributor: Cloudflare One GUI for Linux contributors
-pkgname=cloudflare-one-gui
+# Maintainer: ThirdFlare One contributors
+pkgname=thirdflare-one
 pkgver=__VERSION__
 pkgrel=1
-pkgdesc="Linux desktop-style GUI for managing Cloudflare WARP through warp-cli"
+pkgdesc="ThirdFlare One — unofficial Cloudflare One client via warp-cli"
 arch=('any')
-url="https://github.com/brunner56/cloudflare-one-gui-linux"
+url="https://github.com/oldrepublicwizard/thirdflare-one"
 license=('MIT')
 depends=('nodejs>=20')
 optdepends=(
@@ -13,26 +12,28 @@ optdepends=(
   'libnotify: desktop notifications'
   'cloudflare-warp-bin: Cloudflare WARP client providing warp-cli (AUR)'
 )
-source=("${pkgname}-${pkgver}.tar.gz::https://github.com/brunner56/cloudflare-one-gui-linux/archive/refs/tags/v${pkgver}.tar.gz")
+source=("${pkgname}-${pkgver}.tar.gz::https://github.com/oldrepublicwizard/thirdflare-one/releases/download/v${pkgver}/thirdflare-one-${pkgver}-src.tar.gz")
 sha256sums=('SKIP')
 
 package() {
-  cd "${srcdir}/cloudflare-one-gui-linux-${pkgver}"
+  cd "${srcdir}"
 
-  install -d "${pkgdir}/usr/lib/${pkgname}"
-  install -m 0644 server.js package.json "${pkgdir}/usr/lib/${pkgname}/"
-  cp -a public assets "${pkgdir}/usr/lib/${pkgname}/"
-  install -d "${pkgdir}/usr/lib/${pkgname}/scripts" "${pkgdir}/usr/lib/${pkgname}/bin"
-  install -m 0755 scripts/health-check.mjs scripts/port-open.mjs "${pkgdir}/usr/lib/${pkgname}/scripts/"
-  install -m 0755 bin/cloudflare-one-gui bin/cloudflare-one-tray "${pkgdir}/usr/lib/${pkgname}/bin/"
+  install -d "${pkgdir}/usr/lib/thirdflare"
+  install -m 0644 server.js package.json "${pkgdir}/usr/lib/thirdflare/"
+  cp -a public assets "${pkgdir}/usr/lib/thirdflare/"
+  install -d "${pkgdir}/usr/lib/thirdflare/scripts" "${pkgdir}/usr/lib/thirdflare/bin"
+  install -m 0755 scripts/health-check.mjs scripts/port-open.mjs "${pkgdir}/usr/lib/thirdflare/scripts/"
+  install -m 0755 bin/thirdflare bin/thirdflare-tray bin/thirdflare-one-gui bin/thirdflare-one-tray \
+    "${pkgdir}/usr/lib/thirdflare/bin/"
 
-  install -Dm755 packaging/usr-bin-wrapper.sh "${pkgdir}/usr/bin/cloudflare-one-gui"
-  install -Dm644 packaging/cloudflare-one-gui.desktop \
-    "${pkgdir}/usr/share/applications/cloudflare-one-gui.desktop"
-  install -Dm644 assets/cloudflare-one-gui.svg \
-    "${pkgdir}/usr/share/icons/hicolor/scalable/apps/cloudflare-one-gui.svg"
-  install -Dm644 packaging/cloudflare-one-gui.service \
-    "${pkgdir}/usr/lib/systemd/user/cloudflare-one-gui.service"
+  install -Dm755 packaging/usr-bin-wrapper.sh "${pkgdir}/usr/bin/thirdflare"
+  install -Dm755 packaging/usr-bin-alias-wrapper.sh "${pkgdir}/usr/bin/thirdflare-one"
+  install -Dm644 packaging/thirdflare-one.desktop \
+    "${pkgdir}/usr/share/applications/thirdflare-one.desktop"
+  install -Dm644 assets/thirdflare.svg \
+    "${pkgdir}/usr/share/icons/hicolor/scalable/apps/thirdflare.svg"
+  install -Dm644 packaging/thirdflare-one.service \
+    "${pkgdir}/usr/lib/systemd/user/thirdflare-one.service"
   install -Dm644 LICENSE "${pkgdir}/usr/share/licenses/${pkgname}/LICENSE"
   install -Dm644 README.md "${pkgdir}/usr/share/doc/${pkgname}/README.md"
 }

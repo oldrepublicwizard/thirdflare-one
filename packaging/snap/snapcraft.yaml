@@ -1,24 +1,24 @@
-name: cloudflare-one-gui
+name: thirdflare-one
 base: core24
 version: '0.1.0'
-summary: Linux GUI for Cloudflare WARP via warp-cli
+summary: ThirdFlare One — unofficial Cloudflare One client
 description: |
-  A local desktop-style GUI that wraps the host Cloudflare WARP client (warp-cli).
-  Classic confinement is required so the app can reach host warp-cli and the WARP daemon.
-  Install Cloudflare WARP separately:
+  ThirdFlare One wraps the host Cloudflare WARP client (warp-cli) with a local API
+  and optional browser UI. Classic confinement is required so the snap can reach
+  host warp-cli and the WARP daemon. Install Cloudflare WARP separately:
   https://developers.cloudflare.com/warp-client/get-started/linux/
 grade: stable
 confinement: classic
 license: MIT
 
 apps:
-  cloudflare-one-gui:
-    command: bin/cloudflare-one-gui
-    desktop: share/applications/cloudflare-one-gui.desktop
-    common-id: cloudflare-one-gui
+  thirdflare-one:
+    command: bin/thirdflare-one
+    desktop: share/applications/thirdflare-one.desktop
+    common-id: thirdflare-one
 
 parts:
-  cloudflare-one-gui:
+  thirdflare-one:
     plugin: nil
     source: .
     source-type: local
@@ -26,31 +26,30 @@ parts:
       - rsync
     override-build: |
       set -euo pipefail
-      install -d "$CRAFT_PART_INSTALL/usr/lib/cloudflare-one-gui"
+      install -d "$CRAFT_PART_INSTALL/usr/lib/thirdflare"
       rsync -a \
         --exclude '.git' \
         --exclude 'dist' \
         --exclude 'node_modules' \
         --exclude 'agentdecompile_projects' \
         --exclude 'packaging/flatpak' \
-        "$CRAFT_PART_SRC/" "$CRAFT_PART_INSTALL/usr/lib/cloudflare-one-gui/"
-      # Keep only runtime files under lib.
+        "$CRAFT_PART_SRC/" "$CRAFT_PART_INSTALL/usr/lib/thirdflare/"
       rm -rf \
-        "$CRAFT_PART_INSTALL/usr/lib/cloudflare-one-gui/packaging" \
-        "$CRAFT_PART_INSTALL/usr/lib/cloudflare-one-gui/docs" \
-        "$CRAFT_PART_INSTALL/usr/lib/cloudflare-one-gui/.github" \
-        "$CRAFT_PART_INSTALL/usr/lib/cloudflare-one-gui/AGENTS.md"
+        "$CRAFT_PART_INSTALL/usr/lib/thirdflare/packaging" \
+        "$CRAFT_PART_INSTALL/usr/lib/thirdflare/docs" \
+        "$CRAFT_PART_INSTALL/usr/lib/thirdflare/.github" \
+        "$CRAFT_PART_INSTALL/usr/lib/thirdflare/AGENTS.md"
       install -d "$CRAFT_PART_INSTALL/bin" "$CRAFT_PART_INSTALL/share/applications" \
         "$CRAFT_PART_INSTALL/share/icons/hicolor/scalable/apps"
-      cat > "$CRAFT_PART_INSTALL/bin/cloudflare-one-gui" <<'EOF'
+      cat > "$CRAFT_PART_INSTALL/bin/thirdflare-one" <<'EOF'
       #!/bin/bash
-      exec "$SNAP/usr/lib/cloudflare-one-gui/bin/cloudflare-one-gui" "$@"
+      exec "$SNAP/usr/lib/thirdflare/bin/thirdflare" "$@"
       EOF
-      chmod 0755 "$CRAFT_PART_INSTALL/bin/cloudflare-one-gui"
-      chmod 0755 "$CRAFT_PART_INSTALL/usr/lib/cloudflare-one-gui/bin/"*
-      install -m 0644 "$CRAFT_PART_SRC/packaging/cloudflare-one-gui.desktop" \
-        "$CRAFT_PART_INSTALL/share/applications/cloudflare-one-gui.desktop"
-      install -m 0644 "$CRAFT_PART_SRC/assets/cloudflare-one-gui.svg" \
-        "$CRAFT_PART_INSTALL/share/icons/hicolor/scalable/apps/cloudflare-one-gui.svg"
+      chmod 0755 "$CRAFT_PART_INSTALL/bin/thirdflare-one"
+      chmod 0755 "$CRAFT_PART_INSTALL/usr/lib/thirdflare/bin/"*
+      install -m 0644 "$CRAFT_PART_SRC/packaging/thirdflare-one.desktop" \
+        "$CRAFT_PART_INSTALL/share/applications/thirdflare-one.desktop"
+      install -m 0644 "$CRAFT_PART_SRC/assets/thirdflare.svg" \
+        "$CRAFT_PART_INSTALL/share/icons/hicolor/scalable/apps/thirdflare.svg"
     stage-packages:
       - nodejs

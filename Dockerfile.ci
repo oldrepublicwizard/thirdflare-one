@@ -1,7 +1,7 @@
 FROM ubuntu:24.04
 
-LABEL org.opencontainers.image.source="https://github.com/oldrepublicwizard/cloudflare-one-gui-linux"
-LABEL org.opencontainers.image.description="CI builder image for Cloudflare One GUI packaging"
+LABEL org.opencontainers.image.source="https://github.com/oldrepublicwizard/thirdflare-one"
+LABEL org.opencontainers.image.description="CI builder image for ThirdFlare One packaging"
 
 ENV DEBIAN_FRONTEND=noninteractive
 

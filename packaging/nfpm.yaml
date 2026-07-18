@@ -11,7 +11,7 @@ description: |-
   Drop-in warp-cli GUI parity with the Windows Cloudflare One app.
   Requires Cloudflare WARP (warp-cli) on the host.
 vendor: ThirdFlare One
-homepage: https://github.com/oldrepublicwizard/cloudflare-one-gui-linux
+homepage: https://github.com/oldrepublicwizard/thirdflare-one
 license: MIT
 contents:
   - src: ./dist/payload/usr/lib/thirdflare
@@ -20,18 +20,20 @@ contents:
     dst: /usr/bin/thirdflare
     file_info:
       mode: 0755
-  - src: ./dist/payload/usr/bin/cloudflare-one-gui
-    dst: /usr/bin/cloudflare-one-gui
+  - src: ./dist/payload/usr/bin/thirdflare-one
+    dst: /usr/bin/thirdflare-one
     file_info:
       mode: 0755
-  - src: ./dist/payload/usr/share/applications/thirdflare.desktop
-    dst: /usr/share/applications/thirdflare.desktop
+  - src: ./dist/payload/usr/bin/thirdflare-one-gui
+    dst: /usr/bin/thirdflare-one-gui
+    file_info:
+      mode: 0755
+  - src: ./dist/payload/usr/share/applications/thirdflare-one.desktop
+    dst: /usr/share/applications/thirdflare-one.desktop
   - src: ./dist/payload/usr/share/icons/hicolor/scalable/apps/thirdflare.svg
     dst: /usr/share/icons/hicolor/scalable/apps/thirdflare.svg
-  - src: ./dist/payload/usr/lib/systemd/user/thirdflare.service
-    dst: /usr/lib/systemd/user/thirdflare.service
-  - src: ./dist/payload/usr/lib/systemd/user/cloudflare-one-gui.service
-    dst: /usr/lib/systemd/user/cloudflare-one-gui.service
+  - src: ./dist/payload/usr/lib/systemd/user/thirdflare-one.service
+    dst: /usr/lib/systemd/user/thirdflare-one.service
   - src: ./dist/payload/etc/default/thirdflare
     dst: /etc/default/thirdflare
   - src: ./dist/payload/etc/thirdflare/config.json.example

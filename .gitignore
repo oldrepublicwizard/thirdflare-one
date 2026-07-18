@@ -5,8 +5,8 @@ playwright-report/
 blob-report/
 .tmp-mock-warp*.json
 .cursor/
-cloudflare-one-gui-*.png
-cloudflare-one-gui-snapshot.md
+docs/plans/
+docs/brainstorms/
 *.log
 *.pid
 dist/

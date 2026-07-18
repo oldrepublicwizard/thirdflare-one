@@ -1,6 +1,6 @@
 [Unit]
-Description=ThirdFlare One daemon (warp-cli API)
-Documentation=https://github.com/oldrepublicwizard/cloudflare-one-gui-linux
+Description=ThirdFlare One daemon
+Documentation=https://github.com/oldrepublicwizard/thirdflare-one
 After=network-online.target
 
 [Service]

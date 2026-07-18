@@ -54,19 +54,18 @@ install -m 0755 "${ROOT}/scripts/health-check.mjs" "${LIB}/scripts/health-check.
 install -m 0755 "${ROOT}/scripts/port-open.mjs" "${LIB}/scripts/port-open.mjs"
 install -m 0755 "${ROOT}/bin/thirdflare" "${LIB}/bin/thirdflare"
 install -m 0755 "${ROOT}/bin/thirdflare-tray" "${LIB}/bin/thirdflare-tray"
-install -m 0755 "${ROOT}/bin/cloudflare-one-gui" "${LIB}/bin/cloudflare-one-gui"
-install -m 0755 "${ROOT}/bin/cloudflare-one-tray" "${LIB}/bin/cloudflare-one-tray"
+install -m 0755 "${ROOT}/bin/thirdflare-one-gui" "${LIB}/bin/thirdflare-one-gui"
+install -m 0755 "${ROOT}/bin/thirdflare-one-tray" "${LIB}/bin/thirdflare-one-tray"
 
 install -m 0755 "${ROOT}/packaging/usr-bin-wrapper.sh" "${PAYLOAD}/usr/bin/thirdflare"
-install -m 0755 "${ROOT}/packaging/usr-bin-legacy-wrapper.sh" "${PAYLOAD}/usr/bin/cloudflare-one-gui"
-install -m 0644 "${ROOT}/packaging/thirdflare.desktop" \
-  "${PAYLOAD}/usr/share/applications/thirdflare.desktop"
+install -m 0755 "${ROOT}/packaging/usr-bin-alias-wrapper.sh" "${PAYLOAD}/usr/bin/thirdflare-one"
+install -m 0755 "${ROOT}/packaging/usr-bin-alias-wrapper.sh" "${PAYLOAD}/usr/bin/thirdflare-one-gui"
+install -m 0644 "${ROOT}/packaging/thirdflare-one.desktop" \
+  "${PAYLOAD}/usr/share/applications/thirdflare-one.desktop"
 install -m 0644 "${ROOT}/assets/thirdflare.svg" \
   "${PAYLOAD}/usr/share/icons/hicolor/scalable/apps/thirdflare.svg"
-install -m 0644 "${ROOT}/packaging/thirdflare.service" \
-  "${PAYLOAD}/usr/lib/systemd/user/thirdflare.service"
-install -m 0644 "${ROOT}/packaging/cloudflare-one-gui.service" \
-  "${PAYLOAD}/usr/lib/systemd/user/cloudflare-one-gui.service"
+install -m 0644 "${ROOT}/packaging/thirdflare-one.service" \
+  "${PAYLOAD}/usr/lib/systemd/user/thirdflare-one.service"
 
 printf '%s\n' "$VERSION" > "${DIST}/VERSION"
 echo "Staged payload at ${PAYLOAD} (version ${VERSION})"

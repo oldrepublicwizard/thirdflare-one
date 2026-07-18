@@ -2,7 +2,7 @@
 Type=Application
 Name=ThirdFlare One
 Comment=Unofficial cross-platform Cloudflare One client for warp-cli
-Exec=thirdflare
+Exec=thirdflare-one
 Icon=thirdflare
 Terminal=false
 Categories=Network;
@@ -12,25 +12,25 @@ Actions=Connect;Disconnect;Toggle;Status;Tray;
 
 [Desktop Action Connect]
 Name=Connect WARP
-Exec=thirdflare --connect
+Exec=thirdflare-one --connect
 Icon=thirdflare
 
 [Desktop Action Disconnect]
 Name=Disconnect WARP
-Exec=thirdflare --disconnect
+Exec=thirdflare-one --disconnect
 Icon=thirdflare
 
 [Desktop Action Toggle]
 Name=Toggle WARP
-Exec=thirdflare --toggle
+Exec=thirdflare-one --toggle
 Icon=thirdflare
 
 [Desktop Action Status]
 Name=Show WARP Status
-Exec=thirdflare
+Exec=thirdflare-one
 Icon=thirdflare
 
 [Desktop Action Tray]
 Name=Start Tray Menu
-Exec=thirdflare --tray
+Exec=thirdflare-one --tray
 Icon=thirdflare

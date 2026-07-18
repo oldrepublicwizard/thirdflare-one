@@ -51,8 +51,8 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y shellcheck
-          shellcheck --severity=warning bin/thirdflare bin/thirdflare-tray bin/cloudflare-one-gui bin/cloudflare-one-tray
-          shellcheck --severity=warning scripts/*.sh packaging/scripts/*.sh packaging/usr-bin-wrapper.sh packaging/appimage/AppRun
+          shellcheck --severity=warning thirdflare-one bin/thirdflare bin/thirdflare-tray bin/thirdflare-one-gui bin/thirdflare-one-tray
+          shellcheck --severity=warning scripts/lib/common.sh scripts/install-local.sh scripts/uninstall-local.sh scripts/*.sh packaging/scripts/*.sh packaging/usr-bin-wrapper.sh packaging/usr-bin-alias-wrapper.sh packaging/appimage/AppRun
           chmod +x scripts/mock-warp-cli.sh scripts/mock-warp-cli.mjs scripts/ci-real-warp-smoke.sh
 
       - name: Stage packaging payload (Ubuntu)
@@ -61,7 +61,7 @@ jobs:
           npm run package:stage
           test -x dist/payload/usr/bin/thirdflare
           test -f dist/payload/usr/lib/thirdflare/server.js
-          test -f dist/payload/usr/share/applications/thirdflare.desktop
+          test -f dist/payload/usr/share/applications/thirdflare-one.desktop
 
   ui-smoke:
     name: Playwright UI (mock)

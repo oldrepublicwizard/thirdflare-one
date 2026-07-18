@@ -14,10 +14,13 @@
 - `config/config.example.json` — documented defaults.
 - `config/update-manifest.json` — stable/beta pointers for client update checks.
 - `public/` — optional Web UI (off by default for systemd daemon); `i18n.js` + `locales/`.
-- `bin/thirdflare` — primary launcher (`bin/cloudflare-one-gui` legacy alias).
+- `thirdflare-one` — operator entrypoint (install, build, run, test).
+- `bin/thirdflare` — primary launcher (`bin/thirdflare-one-gui` alias).
+- `scripts/install-local.sh` — idempotent user install to `~/.local/share/thirdflare-one`.
 - `packaging/` — FHS staging, nfpm, AppImage, Flatpak, Snap, systemd units.
+- `docs/GETTING_STARTED.md`, `docs/CONTRIBUTING.md` — user setup and contributor guides.
 - `docs/CONFIGURATION.md`, `docs/ARCHITECTURE.md`, `docs/PACKAGING.md`, `docs/UPDATES.md`, `docs/CI.md`.
-- `STRATEGY.md` — product strategy (control-plane CI, consumer-basic Account).
+- `docs/STRATEGY.md` — product strategy (control-plane CI, consumer-basic Account).
 - `scripts/mock-warp-cli.mjs` — portable stateful mock for Plane M CI.
 - `openapi/thirdflare-api.json` — HTTP contract for OpenAPI checks.
 
@@ -35,6 +38,7 @@
 - `npm run test:ui` — Playwright UI smoke (mock daemon).
 - `npm run test:all` — all Plane M Node test suites (not Playwright).
 - `npm run test:warp:real` — Plane R real WARP smoke (Linux; soft-skip unless required).
+- `./thirdflare-one install` / `./thirdflare-one build appimage` — user install and packaging entrypoints.
 - `./bin/thirdflare` / `./bin/thirdflare --version` — launcher.
 - `npm run package:*` — see `docs/PACKAGING.md`.
 
@@ -57,7 +61,7 @@ Run `npm run check` and `npm run test:all` before handoff. See **[docs/CI.md](do
 
 ## Learned Workspace Facts
 
-- GitHub repository is `oldrepublicwizard/thirdflare-one` (renamed from the older cloudflare-one-gui-linux name).
+- GitHub repository: `oldrepublicwizard/thirdflare-one`.
 - Optional Web UI is off by default; settings are layered (systemd/system defaults with provisional session and in-app overrides).
 - Packaging/CI targets include AppImage, deb, rpm, Flatpak, Snap, GHCR Docker images, and Homebrew. Required CI is Plane M (mock) on Linux/macOS/Windows; Plane R real WARP smoke is Ubuntu-only and optional — see `docs/CI.md`.
 - Native nftables kill-switch lives under `lib/killswitch/` and is exposed via `/api/killswitch`.

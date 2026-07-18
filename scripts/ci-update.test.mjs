@@ -75,7 +75,7 @@ test("guidedCommands for deb include dpkg", () => {
     version: "1.2.0",
     tag: "v1.2.0",
     owner: "oldrepublicwizard",
-    repo: "cloudflare-one-gui-linux"
+    repo: "thirdflare-one"
   });
   assert.ok(cmds.some((c) => c.includes("dpkg -i")));
 });
@@ -114,7 +114,7 @@ test("checkForUpdate with mocked GitHub", async () => {
             assets: [
               {
                 name: "thirdflare-9.9.9-x86_64.AppImage",
-                browser_download_url: "https://github.com/oldrepublicwizard/cloudflare-one-gui-linux/releases/download/v9.9.9/thirdflare-9.9.9-x86_64.AppImage",
+                browser_download_url: "https://github.com/oldrepublicwizard/thirdflare-one/releases/download/v9.9.9/thirdflare-9.9.9-x86_64.AppImage",
                 size: 10,
                 content_type: "application/octet-stream"
               }
@@ -131,14 +131,14 @@ test("checkForUpdate with mocked GitHub", async () => {
       {
         updates: {
           channel: "stable",
-          source: { owner: "oldrepublicwizard", repo: "cloudflare-one-gui-linux" }
+          source: { owner: "oldrepublicwizard", repo: "thirdflare-one" }
         }
       },
       { env: { THIRDFLARE_INSTALL_FORMAT: "appimage" } }
     );
     assert.equal(result.latest, "9.9.9");
     assert.equal(result.updateAvailable, gt("9.9.9", getVersion()));
-    assert.equal(result.recommendedAsset.url, "https://github.com/oldrepublicwizard/cloudflare-one-gui-linux/releases/download/v9.9.9/thirdflare-9.9.9-x86_64.AppImage");
+    assert.equal(result.recommendedAsset.url, "https://github.com/oldrepublicwizard/thirdflare-one/releases/download/v9.9.9/thirdflare-9.9.9-x86_64.AppImage");
   } finally {
     globalThis.fetch = originalFetch;
   }
@@ -208,7 +208,7 @@ test("applyAppImageUpdate writes and replaces target", async () => {
 test("applyUpdate rejects client-supplied assetUrl", async () => {
   const { applyUpdate } = await import("../lib/update/index.mjs");
   const result = await applyUpdate(
-    { updates: { channel: "stable", source: { owner: "oldrepublicwizard", repo: "cloudflare-one-gui-linux" } } },
+    { updates: { channel: "stable", source: { owner: "oldrepublicwizard", repo: "thirdflare-one" } } },
     { assetUrl: "https://evil.example/x.AppImage", assetName: "thirdflare.AppImage" },
     { env: { THIRDFLARE_INSTALL_FORMAT: "appimage" } }
   );
@@ -219,7 +219,7 @@ test("applyUpdate rejects client-supplied assetUrl", async () => {
 test("applyUpdate requires confirmation token for AppImage", async () => {
   clearGithubCache();
   const originalFetch = globalThis.fetch;
-  const assetUrl = "https://github.com/oldrepublicwizard/cloudflare-one-gui-linux/releases/download/v9.9.9/thirdflare-9.9.9-x86_64.AppImage";
+  const assetUrl = "https://github.com/oldrepublicwizard/thirdflare-one/releases/download/v9.9.9/thirdflare-9.9.9-x86_64.AppImage";
   globalThis.fetch = async (url) => {
     const href = String(url);
     if (href.includes("update-manifest.json")) {
@@ -254,7 +254,7 @@ test("applyUpdate requires confirmation token for AppImage", async () => {
     const { applyUpdate, prepareApply, clearApplyConfirmTokens } = await import("../lib/update/index.mjs");
     clearApplyConfirmTokens();
     const denied = await applyUpdate(
-      { updates: { channel: "stable", source: { owner: "oldrepublicwizard", repo: "cloudflare-one-gui-linux" } } },
+      { updates: { channel: "stable", source: { owner: "oldrepublicwizard", repo: "thirdflare-one" } } },
       {},
       { env: { THIRDFLARE_INSTALL_FORMAT: "appimage" }, bindHost: "127.0.0.1" }
     );
@@ -262,14 +262,14 @@ test("applyUpdate requires confirmation token for AppImage", async () => {
     assert.match(denied.error, /confirmation token/i);
 
     const prep = await prepareApply(
-      { updates: { channel: "stable", source: { owner: "oldrepublicwizard", repo: "cloudflare-one-gui-linux" } } },
+      { updates: { channel: "stable", source: { owner: "oldrepublicwizard", repo: "thirdflare-one" } } },
       {},
       { env: { THIRDFLARE_INSTALL_FORMAT: "appimage" } }
     );
     assert.ok(prep.applyConfirmToken);
 
     const remoteDenied = await applyUpdate(
-      { updates: { channel: "stable", source: { owner: "oldrepublicwizard", repo: "cloudflare-one-gui-linux" } } },
+      { updates: { channel: "stable", source: { owner: "oldrepublicwizard", repo: "thirdflare-one" } } },
       { confirmToken: prep.applyConfirmToken },
       { env: { THIRDFLARE_INSTALL_FORMAT: "appimage" }, bindHost: "0.0.0.0" }
     );
@@ -358,7 +358,7 @@ test("applyUpdate returns guided mode for deb installs", async () => {
   try {
     const { applyUpdate } = await import("../lib/update/index.mjs");
     const result = await applyUpdate(
-      { updates: { channel: "stable", source: { owner: "oldrepublicwizard", repo: "cloudflare-one-gui-linux" } } },
+      { updates: { channel: "stable", source: { owner: "oldrepublicwizard", repo: "thirdflare-one" } } },
       {},
       { env: { THIRDFLARE_INSTALL_FORMAT: "deb" } }
     );
@@ -376,7 +376,7 @@ test("guidedCommands rejects unsafe owner", () => {
     version: "1.0.0",
     tag: "v1.0.0",
     owner: 'foo";rm -rf /;echo "',
-    repo: "cloudflare-one-gui-linux"
+    repo: "thirdflare-one"
   });
   assert.ok(cmds[0].startsWith("# Invalid"));
 });

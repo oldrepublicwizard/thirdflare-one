@@ -1,6 +1,6 @@
 FROM node:20-bookworm-slim
 
-LABEL org.opencontainers.image.source="https://github.com/oldrepublicwizard/cloudflare-one-gui-linux"
+LABEL org.opencontainers.image.source="https://github.com/oldrepublicwizard/thirdflare-one"
 LABEL org.opencontainers.image.description="ThirdFlare One API server (requires host warp-cli)"
 
 RUN apt-get update \

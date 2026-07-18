@@ -49,7 +49,7 @@ Usage:
   thirdflare --version          Print ThirdFlare One version
   thirdflare --help             Show this help
 
-Legacy alias: cloudflare-one-gui (same binary)
+Alias: thirdflare-one-gui (same binary)
 USAGE
 }
 

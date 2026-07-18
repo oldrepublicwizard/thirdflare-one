@@ -1,6 +1,5 @@
 #!/usr/bin/env bash
 HERE="$(dirname "$(readlink -f "$0")")"
 export PATH="${HERE}/usr/lib/thirdflare/runtime/node/bin:${PATH}"
-export CLOUDFLARE_ONE_GUI_NODE="${HERE}/usr/lib/thirdflare/runtime/node/bin/node"
 export THIRDFLARE_NODE="${HERE}/usr/lib/thirdflare/runtime/node/bin/node"
 exec "${HERE}/usr/bin/thirdflare" "$@"

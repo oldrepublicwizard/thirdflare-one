@@ -1,0 +1,115 @@
+#!/usr/bin/env bash
+# ThirdFlare One — single operator entrypoint for install, build, run, and test.
+set -euo pipefail
+
+ROOT="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+
+usage() {
+  cat <<USAGE
+ThirdFlare One — unofficial Cloudflare One client
+
+Usage:
+  thirdflare-one install [--service]     Idempotent user install (~/.local/share/thirdflare-one)
+  thirdflare-one uninstall [--purge]   Remove desktop links, CLI symlinks, optional tree
+  thirdflare-one run [args...]         Launch GUI (same as bin/thirdflare)
+  thirdflare-one build <target>        Build packages (appimage, deb, rpm, arch, flatpak, snap, source, all)
+  thirdflare-one dev                   Development server with Web UI enabled
+  thirdflare-one check                 Syntax check
+  thirdflare-one test [suite]          Run tests (all, integration, ui, warp:real, ...)
+  thirdflare-one version               Print installed version
+  thirdflare-one help                  Show this help
+
+Quick paths:
+  ./thirdflare-one install
+  ./thirdflare-one build appimage
+  ./thirdflare-one run --no-open
+USAGE
+}
+
+run_npm() {
+  (cd "$ROOT" && npm "$@")
+}
+
+case "${1:-}" in
+  install)
+    shift
+    exec bash "${ROOT}/scripts/install-local.sh" "$@"
+    ;;
+  uninstall)
+    shift
+    exec bash "${ROOT}/scripts/uninstall-local.sh" "$@"
+    ;;
+  run)
+    shift
+    exec "${ROOT}/bin/thirdflare" "$@"
+    ;;
+  build)
+    target="${2:-appimage}"
+    shift 2 || true
+    case "$target" in
+      appimage) exec bash "${ROOT}/packaging/scripts/build-appimage.sh" "$@" ;;
+      deb) exec bash "${ROOT}/packaging/scripts/build-deb-rpm.sh" deb "$@" ;;
+      rpm) exec bash "${ROOT}/packaging/scripts/build-deb-rpm.sh" rpm "$@" ;;
+      arch) exec bash "${ROOT}/packaging/scripts/build-deb-rpm.sh" arch "$@" ;;
+      flatpak) exec bash "${ROOT}/packaging/scripts/build-flatpak.sh" "$@" ;;
+      snap) exec bash "${ROOT}/packaging/scripts/build-snap.sh" "$@" ;;
+      source) exec bash "${ROOT}/packaging/scripts/build-source.sh" "$@" ;;
+      stage) exec bash "${ROOT}/packaging/scripts/stage-payload.sh" "$@" ;;
+      checksums) exec bash "${ROOT}/packaging/scripts/checksums.sh" "$@" ;;
+      verify) exec bash "${ROOT}/packaging/scripts/verify-packages.sh" all "$@" ;;
+      homebrew) exec bash "${ROOT}/packaging/scripts/generate-homebrew-formula.sh" "$@" ;;
+      all)
+        bash "${ROOT}/packaging/scripts/stage-payload.sh"
+        bash "${ROOT}/packaging/scripts/build-deb-rpm.sh" deb
+        bash "${ROOT}/packaging/scripts/build-deb-rpm.sh" rpm
+        bash "${ROOT}/packaging/scripts/build-appimage.sh"
+        bash "${ROOT}/packaging/scripts/build-source.sh"
+        bash "${ROOT}/packaging/scripts/checksums.sh"
+        ;;
+      *)
+        echo "Unknown build target: $target" >&2
+        echo "Targets: appimage deb rpm arch flatpak snap source stage checksums verify homebrew all" >&2
+        exit 2
+        ;;
+    esac
+    ;;
+  dev)
+    shift
+    run_npm run dev "$@"
+    ;;
+  check)
+    shift
+    run_npm run check "$@"
+    ;;
+  test)
+    suite="${2:-all}"
+    shift 2 || true
+    case "$suite" in
+      all) run_npm run test:all "$@" ;;
+      integration) run_npm run test:integration "$@" ;;
+      mock-warp) run_npm run test:mock-warp "$@" ;;
+      openapi) run_npm run test:openapi "$@" ;;
+      update) run_npm run test:update "$@" ;;
+      notify) run_npm run test:notify "$@" ;;
+      registration) run_npm run test:registration "$@" ;;
+      killswitch) run_npm run test:killswitch "$@" ;;
+      ui) run_npm run test:ui "$@" ;;
+      warp:real) run_npm run test:warp:real "$@" ;;
+      *)
+        echo "Unknown test suite: $suite" >&2
+        exit 2
+        ;;
+    esac
+    ;;
+  version|-V|--version)
+    exec "${ROOT}/bin/thirdflare" --version
+    ;;
+  help|-h|--help|"")
+    usage
+    ;;
+  *)
+    echo "Unknown command: $1" >&2
+    usage >&2
+    exit 2
+    ;;
+esac

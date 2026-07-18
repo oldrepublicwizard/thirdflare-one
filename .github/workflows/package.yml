@@ -340,7 +340,7 @@ jobs:
       - name: Generate Homebrew formula
         run: |
           bash packaging/scripts/generate-homebrew-formula.sh "${{ needs.resolve-version.outputs.version }}"
-          test -f homebrew-tap/Formula/cloudflare-one-gui.rb
+          test -f homebrew-tap/Formula/thirdflare-one.rb
 
       - uses: actions/upload-artifact@v4
         with:
@@ -354,7 +354,7 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           FORMULA_TMP="$(mktemp)"
-          cp homebrew-tap/Formula/cloudflare-one-gui.rb "$FORMULA_TMP"
+          cp homebrew-tap/Formula/thirdflare-one.rb "$FORMULA_TMP"
           # Generated Formula lives under ./homebrew-tap/; remove it so the
           # branch name is not ambiguous with that directory (git exit 128).
           rm -rf homebrew-tap
@@ -367,10 +367,10 @@ jobs:
             git rm -rf . 2>/dev/null || true
           fi
           mkdir -p Formula
-          cp "$FORMULA_TMP" Formula/cloudflare-one-gui.rb
+          cp "$FORMULA_TMP" Formula/thirdflare-one.rb
           rm -f "$FORMULA_TMP"
-          git add Formula/cloudflare-one-gui.rb
-          git commit -m "chore(homebrew): cloudflare-one-gui ${{ needs.resolve-version.outputs.version }}" || true
+          git add Formula/thirdflare-one.rb
+          git commit -m "chore(homebrew): thirdflare-one ${{ needs.resolve-version.outputs.version }}" || true
           git push origin HEAD:homebrew-tap --force
 
   publish:

@@ -29,8 +29,8 @@ mv "${tmpdir}/node-v${NODE_VERSION}-linux-x64" "${APPDIR}/usr/lib/thirdflare/run
 rm -rf "$tmpdir"
 
 install -m 0755 "${ROOT}/packaging/appimage/AppRun" "${APPDIR}/AppRun"
-install -m 0644 "${ROOT}/packaging/thirdflare.desktop" "${APPDIR}/thirdflare.desktop"
-sed -i 's|^Exec=.*|Exec=thirdflare|' "${APPDIR}/thirdflare.desktop"
+install -m 0644 "${ROOT}/packaging/thirdflare-one.desktop" "${APPDIR}/thirdflare-one.desktop"
+sed -i 's|^Exec=.*|Exec=thirdflare-one|' "${APPDIR}/thirdflare-one.desktop"
 install -m 0644 "${ROOT}/assets/thirdflare.svg" "${APPDIR}/thirdflare.svg"
 ln -sf thirdflare.svg "${APPDIR}/.DirIcon"
 
