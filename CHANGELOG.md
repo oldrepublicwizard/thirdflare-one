@@ -5,6 +5,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.7](https://github.com/oldrepublicwizard/thirdflare-one/compare/v0.2.6...v0.2.7) (2026-07-18)
+
+
+### Bug Fixes
+
+* **ci:** gate publish-stores jobs via check-secrets job ([e27a3db](https://github.com/oldrepublicwizard/thirdflare-one/commit/e27a3db97b06f828d6a88ef7e47ab979845aa71d))
+* **ci:** trigger publish-stores on workflow file push ([963f156](https://github.com/oldrepublicwizard/thirdflare-one/commit/963f15667a7878867811662fc03bef809858df96))
+* stabilize killswitch tests under sudo and enrollment pause ([d2837b2](https://github.com/oldrepublicwizard/thirdflare-one/commit/d2837b20d2414fa71ef3d7b1e78bd6bb2213fb2c))
+
 ## [0.2.6](https://github.com/oldrepublicwizard/thirdflare-one/compare/v0.2.5...v0.2.6) (2026-07-18)
 
 
