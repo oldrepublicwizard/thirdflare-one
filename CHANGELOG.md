@@ -5,6 +5,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.3](https://github.com/oldrepublicwizard/thirdflare-one/compare/v0.2.2...v0.2.3) (2026-07-18)
+
+
+### Features
+
+* **ci:** Cross-OS CI confidence + basic Account ([#12](https://github.com/oldrepublicwizard/thirdflare-one/issues/12)) ([352a4dc](https://github.com/oldrepublicwizard/thirdflare-one/commit/352a4dcf9e2c518a9708ec299e202deb4547add3))
+* **config:** persist kill switch desired state to user config ([#10](https://github.com/oldrepublicwizard/thirdflare-one/issues/10)) ([8b3a6c2](https://github.com/oldrepublicwizard/thirdflare-one/commit/8b3a6c2f6014cf7896f72df886a8a715336c2e82))
+* **killswitch:** pause nft rules during Zero Trust enrollment ([#11](https://github.com/oldrepublicwizard/thirdflare-one/issues/11)) ([51096a7](https://github.com/oldrepublicwizard/thirdflare-one/commit/51096a7e9b11793729db42c8784751c6cb355132))
+
+
+### Bug Fixes
+
+* **ci:** chain Package from Release Please via workflow_call ([#8](https://github.com/oldrepublicwizard/thirdflare-one/issues/8)) ([20c7a8b](https://github.com/oldrepublicwizard/thirdflare-one/commit/20c7a8b95a876a3807cadd679bd00e88ca43fb34))
+
 ## [0.2.2](https://github.com/oldrepublicwizard/thirdflare-one/compare/v0.2.1...v0.2.2) (2026-07-18)
 
 
