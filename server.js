@@ -31,7 +31,14 @@ import {
   parseRegistrationOrganization,
   parseRegistrationShow
 } from "./lib/warp/registration.mjs";
-import { applyKillSwitch, probeKillSwitchActive } from "./lib/killswitch/index.mjs";
+import {
+  applyKillSwitch,
+  probeKillSwitchActive,
+  beginEnrollmentPause,
+  endEnrollmentPause,
+  getEnrollmentPauseState,
+  ENROLLMENT_PAUSE_ACTIONS
+} from "./lib/killswitch/index.mjs";
 import { startStatusWatcher } from "./lib/notify/status-watcher.mjs";
 
 const root = fileURLToPath(new URL(".", import.meta.url));
@@ -619,16 +626,33 @@ async function handleApi(req, res, url) {
       const desired = Boolean(getConfig().warp?.killSwitch);
       const allowLan = Boolean(getConfig().warp?.killSwitchAllowLan);
       const probe = await probeKillSwitchActive();
+      const enroll = getEnrollmentPauseState();
       json(res, 200, {
         ok: !probe.probeError,
         desired,
         allowLan,
         active: probe.active,
         probeError: Boolean(probe.probeError),
-        detail: probe.detail,
+        enrollmentPause: enroll,
+        detail: enroll.paused
+          ? "Kill switch paused for Zero Trust enrollment."
+          : probe.detail,
         interface: "CloudflareWARP",
         note: "Native nftables kill switch — blocks outbound traffic except loopback, the WARP tunnel, and Cloudflare bootstrap IPs."
       });
+      return;
+    }
+
+    if (req.method === "POST" && url.pathname === "/api/killswitch/enrollment-pause") {
+      const body = await readJson(req);
+      const mode = body?.mode === "end" ? "end" : "begin";
+      if (mode === "begin") {
+        const result = await beginEnrollmentPause();
+        json(res, result.ok ? 200 : 502, result);
+        return;
+      }
+      const result = await endEnrollmentPause({ reason: "api" });
+      json(res, result.ok ? 200 : 502, result);
       return;
     }
 
@@ -680,8 +704,31 @@ async function handleApi(req, res, url) {
         json(res, 400, { ok: false, error: "Unsupported or invalid action." });
         return;
       }
+      const pauseForEnroll = ENROLLMENT_PAUSE_ACTIONS.has(body?.action);
+      let pauseMeta = null;
+      if (pauseForEnroll) {
+        pauseMeta = await beginEnrollmentPause();
+        if (!pauseMeta.ok) {
+          json(res, 502, {
+            ok: false,
+            error: pauseMeta.detail || "Could not pause kill switch for enrollment.",
+            killSwitchPause: pauseMeta
+          });
+          return;
+        }
+      }
       const result = await runWarp(args, { timeout: 30000 });
-      json(res, result.ok ? 200 : 502, { ok: result.ok, result: redactCommand(result) });
+      let resumeMeta = null;
+      if (pauseForEnroll && body?.action === "registrationToken") {
+        // Token completion ends the browser/IdP window — restore KS if it was desired.
+        resumeMeta = await endEnrollmentPause({ reason: "registrationToken" });
+      }
+      json(res, result.ok ? 200 : 502, {
+        ok: result.ok,
+        result: redactCommand(result),
+        killSwitchPause: pauseMeta,
+        killSwitchResume: resumeMeta
+      });
       return;
     }
 

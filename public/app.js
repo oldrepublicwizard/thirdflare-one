@@ -73,6 +73,7 @@ const state = {
     allowLan: false,
     active: false,
     probeError: false,
+    enrollmentPaused: false,
     detail: "",
     guidedCommands: null,
     script: null,
@@ -204,6 +205,7 @@ async function loadKillSwitch(showBusy = true) {
     state.killswitch.allowLan = Boolean(body.allowLan);
     state.killswitch.active = body.active === null ? null : Boolean(body.active);
     state.killswitch.probeError = Boolean(body.probeError);
+    state.killswitch.enrollmentPaused = Boolean(body.enrollmentPause?.paused);
     state.killswitch.detail = body.detail || "";
     if (body.ok !== false && !body.guidedCommands) {
       state.killswitch.guidedCommands = null;
@@ -213,6 +215,27 @@ async function loadKillSwitch(showBusy = true) {
     state.killswitch.detail = error.message;
   }
   state.killswitch.loading = false;
+}
+
+async function pauseKillSwitchForEnrollment() {
+  try {
+    const response = await fetch("/api/killswitch/enrollment-pause", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ mode: "begin" })
+    });
+    const body = await response.json();
+    if (!response.ok) {
+      state.error = body.detail || body.error || "Could not pause kill switch for enrollment.";
+      return false;
+    }
+    state.killswitch.enrollmentPaused = Boolean(body.paused);
+    if (body.detail) state.killswitch.detail = body.detail;
+    return true;
+  } catch (error) {
+    state.error = error.message;
+    return false;
+  }
 }
 
 async function setKillSwitch(enabled, allowLan = state.killswitch.allowLan) {
@@ -250,11 +273,13 @@ function killSwitchPanel() {
   const ks = state.killswitch;
   const panel = el("section", "panel killswitch-panel");
   // Treat orphan active (desired off, table on) as on so the toggle can disable.
-  const effectivelyOn = Boolean(ks.active) || Boolean(ks.desired);
+  const effectivelyOn = Boolean(ks.active) || (Boolean(ks.desired) && !ks.enrollmentPaused);
   const mismatch = Boolean(ks.active) !== Boolean(ks.desired) || Boolean(ks.probeError);
-  const badge = ks.probeError
-    ? t("home.killSwitchUnknown")
-    : (ks.active ? t("home.killSwitchOn") : t("home.killSwitchOff"));
+  const badge = ks.enrollmentPaused
+    ? t("home.killSwitchPaused")
+    : ks.probeError
+      ? t("home.killSwitchUnknown")
+      : (ks.active ? t("home.killSwitchOn") : t("home.killSwitchOff"));
   panel.innerHTML = `
     <div class="panel-heading">
       <h3${tipMarkup("killSwitch")}>${t("home.killSwitch")}</h3>
@@ -267,7 +292,11 @@ function killSwitchPanel() {
   main.innerHTML = `
     <div class="switch-meta">
       <strong class="tip" data-tip="${escapeHtml(tip("killSwitch"))}" tabindex="0">${t("home.killSwitchLabel")}</strong>
-      <p>${escapeHtml(ks.detail || (mismatch ? t("home.killSwitchMismatch") : t("home.killSwitchHint")))}</p>
+      <p>${escapeHtml(
+        ks.enrollmentPaused
+          ? t("home.killSwitchPausedHint")
+          : (ks.detail || (mismatch ? t("home.killSwitchMismatch") : t("home.killSwitchHint")))
+      )}</p>
     </div>
   `;
   const toggle = el("button", `switch ${effectivelyOn ? "on" : ""}`);
@@ -784,13 +813,15 @@ function zeroTrustPanel(acct) {
   const portalRow = el("div", "button-row");
   const openPortal = el("button", "secondary tip", t("account.openPortal"));
   openPortal.setAttribute("data-tip", tip("openPortal"));
-  openPortal.onclick = () => {
+  openPortal.onclick = async () => {
     const team = (acct?.organization || state.forms.organization || "").trim().toLowerCase();
     if (!team) {
       state.error = t("account.teamRequired");
       render();
       return;
     }
+    await pauseKillSwitchForEnrollment();
+    render();
     window.open(`https://${encodeURIComponent(team)}.cloudflareaccess.com/warp`, "_blank", "noopener,noreferrer");
   };
   portalRow.append(openPortal);
@@ -1425,7 +1456,7 @@ function parityView() {
   view.append(parityPanel("Implemented GUI coverage", [
     ["Current connection state", "Live status stream, connect/disconnect, daemon health, tunnel/DNS metrics."],
     ["Account and registration", "Registration show/new/delete, organization, devices, license, token, key rotation."],
-    ["Kill switch (nftables)", "ThirdFlare-managed output filter: lo + CloudflareWARP + Cloudflare bootstrap IPs; optional LAN allow. Uses nft/pkexec."],
+    ["Kill switch (nftables)", "ThirdFlare-managed output filter with enroll pause for Zero Trust IdP/browser; optional LAN allow. Uses nft/pkexec."],
     ["Gateway DNS", "Families mode, DNS logging, fallback domains, default fallbacks, Gateway ID override."],
     ["Tunnel controls", "Mode, tunnel protocol, MASQUE options, endpoint, proxy port, VNet, split tunnel routes."],
     ["Trusted networks", "SSID list/add/reset plus Wi-Fi and Ethernet disable toggles."],

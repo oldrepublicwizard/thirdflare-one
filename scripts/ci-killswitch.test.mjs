@@ -18,6 +18,10 @@ import {
   reloadConfig,
   setSessionKillSwitch
 } from "../lib/config.mjs";
+import {
+  ENROLLMENT_PAUSE_ACTIONS,
+  getEnrollmentPauseState
+} from "../lib/killswitch/enroll-pause.mjs";
 
 test("enable script drops by default and allows lo + WARP + bootstrap", () => {
   const script = buildEnableScript({ allowLan: false, useDestroy: true });
@@ -82,4 +86,10 @@ test("persistUserKillSwitch ignores non-boolean enabled", () => {
   const before = getConfig().warp.killSwitch;
   persistUserKillSwitch({ enabled: "yes", allowLan: false });
   assert.equal(getConfig().warp.killSwitch, before);
+});
+
+test("enrollment pause actions cover Zero Trust flows", () => {
+  assert.ok(ENROLLMENT_PAUSE_ACTIONS.has("registerOrganization"));
+  assert.ok(ENROLLMENT_PAUSE_ACTIONS.has("registrationToken"));
+  assert.equal(getEnrollmentPauseState().paused, false);
 });

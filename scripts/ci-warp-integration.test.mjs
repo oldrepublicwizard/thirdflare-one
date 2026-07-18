@@ -179,6 +179,20 @@ test("POST /api/killswitch rejects non-boolean enabled", async () => {
   assert.equal(res.status, 400);
 });
 
+test("POST /api/killswitch/enrollment-pause begin is safe when KS off", async () => {
+  const res = await httpJson("POST", "/api/killswitch/enrollment-pause", { mode: "begin" });
+  assert.equal(res.status, 200);
+  assert.equal(res.json.ok, true);
+  assert.equal(res.json.paused, false);
+});
+
+test("GET /api/killswitch includes enrollmentPause object", async () => {
+  const res = await httpJson("GET", "/api/killswitch");
+  assert.equal(res.status, 200);
+  assert.equal(typeof res.json.enrollmentPause, "object");
+  assert.equal(typeof res.json.enrollmentPause.paused, "boolean");
+});
+
 test("POST /api/action applyLicense and registerOrganization validate input", async () => {
   const badLicense = await httpJson("POST", "/api/action", {
     action: "applyLicense",
