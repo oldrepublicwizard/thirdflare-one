@@ -106,6 +106,8 @@ Read **[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)** for API routes, config mod
 
 ## Packages & CI
 
+Required CI (**Plane M**) runs mock `warp-cli` contract tests on **Linux, macOS, and Windows**. Optional **Plane R** on Ubuntu push to `main` exercises real WARP connect/disconnect via `cdn-cgi/trace` (and secondary IP probes). See **[docs/CI.md](docs/CI.md)** for what “green” means.
+
 Prebuilt artifacts publish on [GitHub Releases](../../releases). Formats, GHCR images, Homebrew tap, and manual workflow dispatch are documented in **[docs/PACKAGING.md](docs/PACKAGING.md)**.
 
 ```bash

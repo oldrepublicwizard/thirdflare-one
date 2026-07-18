@@ -1,0 +1,179 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "ThirdFlare One local API",
+    "version": "0.2.2",
+    "description": "Control-plane contract for the Node daemon. Validated in Plane M CI against a mock warp-cli."
+  },
+  "servers": [{ "url": "http://127.0.0.1:4173" }],
+  "paths": {
+    "/api/health": {
+      "get": {
+        "summary": "Liveness",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["ok", "app", "version"],
+                  "properties": {
+                    "ok": { "type": "boolean" },
+                    "app": { "type": "string", "enum": ["thirdflare"] },
+                    "version": { "type": "string" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/version": {
+      "get": {
+        "summary": "Installed version and update source",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["ok", "version", "channel", "source"],
+                  "properties": {
+                    "ok": { "type": "boolean" },
+                    "version": { "type": "string" },
+                    "channel": { "type": "string" },
+                    "source": { "type": "object" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/account": {
+      "get": {
+        "summary": "Structured registration",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["registered", "consumer", "devices"],
+                  "properties": {
+                    "registered": { "type": "boolean" },
+                    "consumer": { "type": "boolean" },
+                    "zeroTrust": { "type": "boolean" },
+                    "accountType": {},
+                    "deviceId": {},
+                    "license": {},
+                    "devices": { "type": "array" },
+                    "nextSteps": { "type": "array" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/snapshot": {
+      "get": {
+        "summary": "Aggregated warp-cli snapshot",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["daemon", "status", "commands"],
+                  "properties": {
+                    "daemon": { "type": "object" },
+                    "status": { "type": "object" },
+                    "commands": { "type": "object" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/killswitch": {
+      "get": {
+        "summary": "Kill-switch state",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["desired", "interface", "enrollmentPause"],
+                  "properties": {
+                    "desired": { "type": "boolean" },
+                    "active": {},
+                    "allowLan": { "type": "boolean" },
+                    "interface": { "type": "string" },
+                    "enrollmentPause": { "type": "object" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/config": {
+      "get": {
+        "summary": "Effective config",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["ok", "config"],
+                  "properties": {
+                    "ok": { "type": "boolean" },
+                    "config": { "type": "object" },
+                    "sources": { "type": "object" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/action": {
+      "post": {
+        "summary": "Whitelisted warp-cli mutation",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["ok", "result"],
+                  "properties": {
+                    "ok": { "type": "boolean" },
+                    "result": { "type": "object" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

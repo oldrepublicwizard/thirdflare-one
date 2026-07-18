@@ -48,13 +48,23 @@ When `ui.notifications` is true (default), `server.js` starts `lib/notify/status
 | Route | Method | Purpose |
 |-------|--------|---------|
 | `/api/health` | GET | Liveness; returns `app: "thirdflare"` |
+| `/api/version` | GET | Installed semver, channel, update source |
 | `/api/config` | GET | Effective config + source flags |
 | `/api/config/session` | POST | Provisional in-app overrides |
+| `/api/account` | GET | Structured registration / account DTO |
 | `/api/snapshot` | GET | Aggregated `warp-cli` command output |
 | `/api/events` | GET | SSE stream from `warp-cli --listen status` |
 | `/api/action` | POST | Whitelisted mutations (`connect`, `setMode`, …) |
+| `/api/killswitch` | GET/POST | nftables kill-switch desired/active (Linux) |
+| `/api/killswitch/enrollment-pause` | POST | Pause/resume KS around Zero Trust enrollment |
+| `/api/update/check` | GET | Channel/manifest/GitHub update check |
+| `/api/update/forks` | GET | Allowed update sources |
+| `/api/update/releases` | GET | Release list for owner/repo |
+| `/api/update/source` | POST | Session override for update source |
+| `/api/update/prepare` | POST | Download/verify prepare token |
+| `/api/update/apply` | POST | Apply prepared AppImage update |
 
-Secrets in command output are redacted before JSON serialization.
+Contract file: [`openapi/thirdflare-api.json`](../openapi/thirdflare-api.json). Secrets in command output are redacted before JSON serialization.
 
 ## Configuration flow
 
@@ -96,10 +106,12 @@ Secrets in command output are redacted before JSON serialization.
 ## Testing
 
 - `npm run check` — syntax
-- `npm run test:integration` — mock `WARP_CLI` + DNS + HTTP API
-- CI package smoke — deb install in Node 20 container, artifact verification
+- `npm run test:all` — Plane M (mock CLI, OpenAPI shapes, units)
+- `npm run test:ui` — Playwright against mock daemon
+- `npm run test:warp:real` — Plane R (optional Linux)
+- CI package smoke — deb/rpm on Ubuntu
 
-See [PACKAGING.md](PACKAGING.md) for release mechanics.
+See [CI.md](CI.md) for confidence levels and [PACKAGING.md](PACKAGING.md) for release mechanics.
 
 ## Parity strategy
 

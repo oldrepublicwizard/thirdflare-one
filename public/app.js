@@ -67,7 +67,6 @@ const state = {
   account: null,
   accountLoading: false,
   revealLicense: false,
-  accountPath: "auto",
   killswitch: {
     desired: false,
     allowLan: false,
@@ -217,27 +216,6 @@ async function loadKillSwitch(showBusy = true) {
   state.killswitch.loading = false;
 }
 
-async function pauseKillSwitchForEnrollment() {
-  try {
-    const response = await fetch("/api/killswitch/enrollment-pause", {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ mode: "begin" })
-    });
-    const body = await response.json();
-    if (!response.ok) {
-      state.error = body.detail || body.error || "Could not pause kill switch for enrollment.";
-      return false;
-    }
-    state.killswitch.enrollmentPaused = Boolean(body.paused);
-    if (body.detail) state.killswitch.detail = body.detail;
-    return true;
-  } catch (error) {
-    state.error = error.message;
-    return false;
-  }
-}
-
 async function setKillSwitch(enabled, allowLan = state.killswitch.allowLan) {
   if (enabled && !window.confirm(t("home.killSwitchConfirm"))) return;
   state.killswitch.loading = true;
@@ -380,6 +358,7 @@ function shell() {
     const button = el("button", `nav-item ${state.view === id ? "active" : ""}`);
     button.innerHTML = `<span class="nav-icon" aria-hidden="true">${icon}</span><span>${t(labelKey)}</span>`;
     button.setAttribute("aria-label", t(labelKey));
+    button.setAttribute("data-nav", id);
     if (tipKey) applyTip(button, tipKey);
     button.onclick = () => {
       state.view = id;
@@ -504,7 +483,7 @@ function homeView() {
       <p>${state.snapshot?.daemon?.message || t("common.loading")}</p>
     </div>
     <div class="hero-actions">
-      <button type="button" class="connection-toggle" data-connection-toggle tabindex="0"></button>
+      <button type="button" class="connection-toggle" data-connection-toggle data-testid="connection-toggle" tabindex="0"></button>
     </div>
   `;
   const toggleBtn = primary.querySelector("[data-connection-toggle]");
@@ -596,7 +575,6 @@ function accountView() {
   const acct = state.account;
   view.append(pageTitle(t("account.title"), t("account.copy"), "pageAccount"));
 
-  const path = resolveAccountPath(acct);
   const overview = el("section", "panel account-overview account-status-strip");
   overview.innerHTML = `
     <div class="panel-heading">
@@ -624,30 +602,7 @@ function accountView() {
     overview.append(grid);
   }
   view.append(overview);
-
-  const paths = el("div", "account-path-switch field-group");
-  paths.innerHTML = `<label class="tip" data-tip="${escapeHtml(tip("accountOverview"))}" tabindex="0">${t("account.choosePath")}</label>`;
-  const seg = el("div", "segmented account-paths");
-  [
-    ["free", t("account.pathFree"), tip("freePlan")],
-    ["zerotrust", t("account.pathZeroTrust"), tip("zeroTrust")]
-  ].forEach(([id, label, tipText]) => {
-    const button = el("button", path === id ? "selected" : "", label);
-    button.classList.add("tip");
-    button.setAttribute("data-tip", tipText);
-    button.tabIndex = 0;
-    button.onclick = () => {
-      state.accountPath = id;
-      render();
-    };
-    seg.append(button);
-  });
-  paths.append(seg);
-  view.append(paths);
-
-  const workspace = el("div", "account-workspace");
-  workspace.append(path === "zerotrust" ? zeroTrustPanel(acct) : freePlanPanel(acct));
-  view.append(workspace);
+  view.append(basicAccountPanel(acct));
   view.append(dangerPanel());
 
   const details = el("details", "account-raw");
@@ -655,15 +610,8 @@ function accountView() {
   details.append(outputPanel(t("account.registrationRaw"), state.snapshot?.commands?.registration || acct?.commands?.registration, "rawOutput"));
   details.append(outputPanel(t("account.organizationRaw"), state.snapshot?.commands?.organization || acct?.commands?.organization, "rawOutput"));
   details.append(outputPanel(t("account.devicesRaw"), state.snapshot?.commands?.devices || acct?.commands?.devices, "devices"));
-  details.append(outputPanel(t("account.targetsRaw"), state.snapshot?.commands?.targets, "rawOutput"));
   view.append(details);
   return view;
-}
-
-function resolveAccountPath(acct) {
-  if (state.accountPath === "free" || state.accountPath === "zerotrust") return state.accountPath;
-  if (acct?.zeroTrust && !acct?.consumer) return "zerotrust";
-  return "free";
 }
 
 function shortId(value) {
@@ -673,24 +621,20 @@ function shortId(value) {
   return `${s.slice(0, 8)}…${s.slice(-4)}`;
 }
 
-function freePlanPanel(acct) {
+function basicAccountPanel(acct) {
   const panel = el("section", "panel account-section");
   panel.innerHTML = `
     <div class="panel-heading">
-      <h3 class="tip" data-tip="${escapeHtml(tip("freePlan"))}" tabindex="0">${t("account.freeTitle")}</h3>
-      <span>${t("account.freeHint")}</span>
+      <h3 class="tip" data-tip="${escapeHtml(tip("freePlan"))}" tabindex="0">${t("account.basicTitle")}</h3>
+      <span>${t("account.basicHint")}</span>
     </div>
-    <p class="muted">${escapeHtml(t("account.freeCopy"))}</p>
-    <ol class="account-steps compact">
-      <li>${escapeHtml(t("account.freeStep1"))}</li>
-      <li>${escapeHtml(t("account.freeStep2"))}</li>
-      <li>${escapeHtml(t("account.freeStep3"))}</li>
-    </ol>
+    <p class="muted">${escapeHtml(t("account.basicCopy"))}</p>
   `;
 
   const actions = el("div", "button-row");
   const registerBtn = el("button", "primary tip", t("account.registerFree"));
   registerBtn.setAttribute("data-tip", tip("registerFree"));
+  registerBtn.setAttribute("data-testid", "account-register");
   registerBtn.onclick = () => action("register");
   actions.append(registerBtn);
   panel.append(actions);
@@ -703,7 +647,7 @@ function freePlanPanel(acct) {
         <h4 class="tip" data-tip="${escapeHtml(tip("licenseKey"))}" tabindex="0">${t("account.yourLicense")}</h4>
         <span>${t("account.licenseHint")}</span>
       </div>
-      <code class="license-value">${escapeHtml(shown)}</code>
+      <code class="license-value" data-testid="account-license">${escapeHtml(shown)}</code>
     `;
     const row = el("div", "button-row");
     const reveal = el("button", "secondary", state.revealLicense ? t("account.hideLicense") : t("account.revealLicense"));
@@ -731,8 +675,8 @@ function freePlanPanel(acct) {
   const licenseForm = el("label", "input-row");
   licenseForm.innerHTML = `
     <span class="tip" data-tip="${escapeHtml(tip("applyLicense"))}" tabindex="0">${t("account.applyLicenseLabel")}</span>
-    <input value="${escapeHtml(state.forms.licenseKey)}" placeholder="${escapeHtml(t("account.licensePlaceholder"))}" autocomplete="off" spellcheck="false" />
-    <button class="secondary">${t("account.applyLicense")}</button>
+    <input value="${escapeHtml(state.forms.licenseKey)}" placeholder="${escapeHtml(t("account.licensePlaceholder"))}" autocomplete="off" spellcheck="false" data-testid="account-license-input" />
+    <button class="secondary" data-testid="account-apply-license">${t("account.applyLicense")}</button>
   `;
   const licenseInput = licenseForm.querySelector("input");
   licenseInput.oninput = () => {
@@ -744,7 +688,7 @@ function freePlanPanel(acct) {
   };
   panel.append(licenseForm);
 
-  if (acct?.consumer && Array.isArray(acct.devices)) {
+  if (acct?.consumer && Array.isArray(acct.devices) && acct.devices.length) {
     const devices = el("div", "devices-list");
     devices.innerHTML = `
       <div class="panel-heading">
@@ -752,52 +696,32 @@ function freePlanPanel(acct) {
         <span>${acct.devices.length}</span>
       </div>
     `;
-    if (!acct.devices.length) {
-      devices.append(el("p", "muted", t("account.noDevices")));
-    } else {
-      const table = el("div", "device-table");
-      acct.devices.forEach((device) => {
-        const row = el("div", "device-row");
-        const active = device.active ? t("account.active") : t("account.inactive");
-        row.innerHTML = `
-          <strong>${escapeHtml(device.name || device.model || t("account.unnamedDevice"))}</strong>
-          <span>${escapeHtml(device.os || t("common.unknown"))}</span>
-          <span class="${device.active ? "ok" : "muted"}">${escapeHtml(active)}</span>
-          <code>${escapeHtml(shortId(device.deviceId))}</code>
-        `;
-        table.append(row);
-      });
-      devices.append(table);
-    }
+    const table = el("div", "device-table");
+    acct.devices.forEach((device) => {
+      const row = el("div", "device-row");
+      const active = device.active ? t("account.active") : t("account.inactive");
+      row.innerHTML = `
+        <strong>${escapeHtml(device.name || device.model || t("account.unnamedDevice"))}</strong>
+        <span>${escapeHtml(device.os || t("common.unknown"))}</span>
+        <span class="${device.active ? "ok" : "muted"}">${escapeHtml(active)}</span>
+        <code>${escapeHtml(shortId(device.deviceId))}</code>
+      `;
+      table.append(row);
+    });
+    devices.append(table);
     panel.append(devices);
   }
 
-  const docs = el("p", "account-docs muted");
-  docs.innerHTML = `${escapeHtml(t("account.docsPrefix"))} <a href="https://developers.cloudflare.com/warp-client/get-started/linux/" target="_blank" rel="noopener noreferrer">${escapeHtml(t("account.docsLinux"))}</a>`;
-  panel.append(docs);
-  return panel;
-}
-
-function zeroTrustPanel(acct) {
-  const panel = el("section", "panel account-section");
-  panel.innerHTML = `
-    <div class="panel-heading">
-      <h3 class="tip" data-tip="${escapeHtml(tip("zeroTrust"))}" tabindex="0">${t("account.ztTitle")}</h3>
-      <span>${t("account.ztHint")}</span>
-    </div>
-    <p class="muted">${escapeHtml(t("account.ztCopy"))}</p>
-    <ol class="account-steps compact">
-      <li>${escapeHtml(t("account.ztStep1"))}</li>
-      <li>${escapeHtml(t("account.ztStep2"))}</li>
-      <li>${escapeHtml(t("account.ztStep3"))}</li>
-    </ol>
-  `;
+  const advanced = el("details", "account-advanced");
+  advanced.innerHTML = `<summary class="tip" data-tip="${escapeHtml(tip("zeroTrust"))}" tabindex="0">${t("account.advancedZt")}</summary>`;
+  const advBody = el("div", "account-advanced-body");
+  advBody.append(el("p", "muted", t("account.advancedZtCopy")));
 
   const teamForm = el("label", "input-row");
   teamForm.innerHTML = `
     <span class="tip" data-tip="${escapeHtml(tip("teamName"))}" tabindex="0">${t("account.teamName")}</span>
     <input value="${escapeHtml(state.forms.organization)}" placeholder="${escapeHtml(t("account.teamPlaceholder"))}" autocomplete="off" spellcheck="false" />
-    <button class="primary">${t("account.enrollTeam")}</button>
+    <button class="secondary">${t("account.enrollTeam")}</button>
   `;
   const teamInput = teamForm.querySelector("input");
   teamInput.oninput = () => {
@@ -808,31 +732,7 @@ function zeroTrustPanel(acct) {
     if (!team) return;
     action("registerOrganization", team, null, true);
   };
-  panel.append(teamForm);
-
-  const portalRow = el("div", "button-row");
-  const openPortal = el("button", "secondary tip", t("account.openPortal"));
-  openPortal.setAttribute("data-tip", tip("openPortal"));
-  openPortal.onclick = async () => {
-    const team = (acct?.organization || state.forms.organization || "").trim().toLowerCase();
-    if (!team) {
-      state.error = t("account.teamRequired");
-      render();
-      return;
-    }
-    await pauseKillSwitchForEnrollment();
-    render();
-    window.open(`https://${encodeURIComponent(team)}.cloudflareaccess.com/warp`, "_blank", "noopener,noreferrer");
-  };
-  portalRow.append(openPortal);
-  if (acct?.accessPortalUrl) {
-    const link = el("a", "doc-link", acct.accessPortalUrl);
-    link.href = acct.accessPortalUrl;
-    link.target = "_blank";
-    link.rel = "noopener noreferrer";
-    portalRow.append(link);
-  }
-  panel.append(portalRow);
+  advBody.append(teamForm);
 
   const tokenForm = el("label", "input-row token-row");
   tokenForm.innerHTML = `
@@ -848,10 +748,16 @@ function zeroTrustPanel(acct) {
     if (!state.forms.authToken.trim()) return;
     action("registrationToken", state.forms.authToken.trim(), null, true);
   };
-  panel.append(tokenForm);
+  advBody.append(tokenForm);
+
+  const docsZt = el("p", "account-docs muted");
+  docsZt.innerHTML = `${escapeHtml(t("account.docsPrefix"))} <a href="https://developers.cloudflare.com/cloudflare-one/team-and-resources/devices/cloudflare-one-client/deployment/manual-deployment/" target="_blank" rel="noopener noreferrer">${escapeHtml(t("account.docsZt"))}</a>`;
+  advBody.append(docsZt);
+  advanced.append(advBody);
+  panel.append(advanced);
 
   const docs = el("p", "account-docs muted");
-  docs.innerHTML = `${escapeHtml(t("account.docsPrefix"))} <a href="https://developers.cloudflare.com/cloudflare-one/team-and-resources/devices/cloudflare-one-client/deployment/manual-deployment/" target="_blank" rel="noopener noreferrer">${escapeHtml(t("account.docsZt"))}</a>`;
+  docs.innerHTML = `${escapeHtml(t("account.docsPrefix"))} <a href="https://developers.cloudflare.com/warp-client/get-started/linux/" target="_blank" rel="noopener noreferrer">${escapeHtml(t("account.docsLinux"))}</a>`;
   panel.append(docs);
   return panel;
 }
@@ -874,6 +780,7 @@ function dangerPanel() {
   };
   const del = el("button", "secondary danger tip", t("account.deleteRegistration"));
   del.setAttribute("data-tip", tip("deleteRegistration"));
+  del.setAttribute("data-testid", "account-delete");
   del.onclick = () => {
     if (!window.confirm(t("account.confirmDelete"))) return;
     action("deleteRegistration");

@@ -130,6 +130,10 @@ function spawnWarpCli(warpArgs, options = {}) {
   if (process.env.FLATPAK_ID && cmd === "warp-cli") {
     return spawn("flatpak-spawn", ["--host", "--", "warp-cli", ...warpArgs], options);
   }
+  // Portable Node mock / script: WARP_CLI ending in .mjs/.cjs/.js runs via node (Win/macOS/Linux).
+  if (/\.(mjs|cjs|js)$/i.test(String(cmd))) {
+    return spawn(process.execPath, [cmd, ...warpArgs], options);
+  }
   return spawn(cmd, warpArgs, options);
 }
 
