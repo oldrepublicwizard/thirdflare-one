@@ -12,7 +12,9 @@ const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 const mockWarp = join(root, "scripts/mock-warp-cli.mjs");
 const port = Number(process.env.CI_TEST_PORT || 14733);
 const baseUrl = `http://127.0.0.1:${port}`;
-const stateFile = join(mkdtempSync(join(tmpdir(), "tf-integ-")), "state.json");
+const integTempDir = mkdtempSync(join(tmpdir(), "tf-integ-"));
+const stateFile = join(integTempDir, "state.json");
+const configHome = join(integTempDir, "home");
 
 /** @type {import('node:child_process').ChildProcess | null} */
 let serverProc = null;
@@ -115,6 +117,7 @@ before(async () => {
     cwd: root,
     env: {
       ...process.env,
+      HOME: configHome,
       PORT: String(port),
       WARP_CLI: mockWarp,
       MOCK_WARP_STATE: stateFile,
@@ -141,7 +144,7 @@ after(async () => {
     if (!serverProc.killed) serverProc.kill("SIGKILL");
   }
   try {
-    rmSync(dirname(stateFile), { recursive: true, force: true });
+    rmSync(integTempDir, { recursive: true, force: true });
   } catch {
     /* ignore */
   }

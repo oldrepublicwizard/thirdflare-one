@@ -19,6 +19,7 @@ import {
   setSessionKillSwitch
 } from "../lib/config.mjs";
 import {
+  beginEnrollmentPause,
   ENROLLMENT_PAUSE_ACTIONS,
   getEnrollmentPauseState
 } from "../lib/killswitch/enroll-pause.mjs";
@@ -92,4 +93,29 @@ test("enrollment pause actions cover Zero Trust flows", () => {
   assert.ok(ENROLLMENT_PAUSE_ACTIONS.has("registerOrganization"));
   assert.ok(ENROLLMENT_PAUSE_ACTIONS.has("registrationToken"));
   assert.equal(getEnrollmentPauseState().paused, false);
+});
+
+test("beginEnrollmentPause is no-op when kill switch not desired", async () => {
+  const env = { ...process.env, THIRDFLARE_NFT_NO_PKEXEC: "1" };
+
+  try {
+    clearSessionOverrides();
+    setSessionKillSwitch({ enabled: false, allowLan: false });
+    assert.equal(getConfig().warp.killSwitch, false);
+
+    const first = await beginEnrollmentPause({ env });
+    assert.equal(first.ok, true);
+    assert.equal(first.paused, false);
+    assert.equal(first.wasDesired, false);
+    assert.match(first.detail, /not desired/i);
+    assert.equal(getEnrollmentPauseState().paused, false);
+
+    const second = await beginEnrollmentPause({ env });
+    assert.equal(second.ok, true);
+    assert.equal(second.paused, false);
+    assert.equal(getEnrollmentPauseState().paused, false);
+  } finally {
+    clearSessionOverrides();
+    reloadConfig(process.env);
+  }
 });

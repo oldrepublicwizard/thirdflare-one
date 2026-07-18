@@ -19,6 +19,10 @@ npm run test:all
 npm run test:ui   # Playwright library smoke (Home connect + Account register)
 ```
 
+### Test environment variables
+
+Mock integration, OpenAPI, and UI smoke harnesses set `THIRDFLARE_NFT_NO_PKEXEC=1`. This simulates an **unprivileged daemon**: it blocks pkexec fallback and skips nft rule apply (`runNftScript`), so `sudo npm run test:all` matches GitHub-hosted CI (for example, POST `/api/killswitch` enable without privilege returns 502 and desired stays false). nft list/probe for GET `/api/killswitch` status reads is **not** blocked.
+
 ## Plane R — Real WARP network smoke (optional)
 
 **Runs on:** Ubuntu on `push` to `main` and `workflow_dispatch` (not required for PR merge).
